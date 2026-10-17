@@ -49,7 +49,7 @@ test("sandbox writes reject hosted and cross-origin requests without contacting 
     403,
   );
 });
-test("sandbox setup refuses a duplicate fictional customer", async (t) => {
+test("retired customer creation endpoint cannot bypass the preview workflow", async (t) => {
   const original = process.env.NESSIE_API_KEY;
   process.env.NESSIE_API_KEY = "test-placeholder";
   t.after(() => {
@@ -74,8 +74,8 @@ test("sandbox setup refuses a duplicate fictional customer", async (t) => {
       headers: { origin: "http://localhost:3000" },
     }),
   );
-  assert.equal(result.status, 409);
-  assert.equal(reads, 1);
+  assert.equal(result.status, 410);
+  assert.equal(reads, 0);
 });
 test("explanation route rejects forged origins and invalid simulation amounts", async () => {
   assert.equal(

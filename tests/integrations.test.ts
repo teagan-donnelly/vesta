@@ -64,16 +64,6 @@ test("Nessie normalizes monetary units, statuses, customers and all supported re
         { _id: "paid", status: "completed" },
       ],
       "/accounts/a/loans": [{ _id: "l", amount: 5000, monthly_payment: 100 }],
-      "/accounts/a/purchases": [
-        {
-          _id: "p",
-          merchant_id: "m",
-          purchase_date: "2026-10-03",
-          amount: 15.99,
-          status: "completed",
-        },
-      ],
-      "/merchants/m": { name: "Netflix", category: "Subscription" },
     };
     assert.ok(input.pathname in routes);
     return Response.json(routes[input.pathname]);
@@ -81,14 +71,18 @@ test("Nessie normalizes monetary units, statuses, customers and all supported re
   const d = await loadNessie();
   assert.equal(d.source, "nessie");
   assert.equal(d.accounts[0].balanceCents, 123456);
-  assert.equal(d.transactions.length, 3);
-  assert.equal(d.transactions.find((t) => t.id === "p")!.amountCents, -1599);
+  assert.equal(d.transactions.length, 2);
+  assert.equal(
+    d.transactions.find((t) => t.id === "w")!.recordType,
+    "withdrawal",
+  );
   assert.equal(d.transactions.find((t) => t.id === "d")!.amountCents, 10001);
   assert.equal(d.transactions[0].pending, false);
   assert.equal(d.bills.length, 1);
   assert.equal(d.bills[0].amountCents, 90005);
   assert.equal(d.loans[0].paymentCents, 10000);
-  assert.ok(calls.includes("/merchants/m"));
+  assert.ok(!calls.some((path) => path.includes("purchase")));
+  assert.ok(d.warnings.some((w) => w.includes("does not document")));
 });
 test("Nessie failures never silently return demo records and errors redact credentials", async (t) => {
   const original = process.env.NESSIE_API_KEY;

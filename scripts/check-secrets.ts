@@ -27,7 +27,11 @@ const staged = execFileSync("git", ["diff", "--cached", "--name-only", "-z"], {
   .split("\0")
   .filter(Boolean);
 for (const path of staged) {
-  if (/(^|\/)(node_modules|\.next|\.tmp)(\/|$)|(^|\/)\.env\.local$/.test(path))
+  if (
+    /(^|\/)(node_modules|\.next|\.tmp|\.vesta-sandbox)(\/|$)|(^|\/)\.env\.local$/.test(
+      path,
+    )
+  )
     throw new Error("Generated or private file is staged.");
   assertNoKey(execFileSync("git", ["show", `:${path}`]));
 }

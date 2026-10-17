@@ -120,6 +120,7 @@ export default function ProtectPage() {
                     <th className="p-2">Date</th>
                     <th className="p-2">Merchant</th>
                     <th className="p-2">Type</th>
+                    <th className="p-2">Record source</th>
                     <th className="p-2">Amount</th>
                   </tr>
                 </thead>
@@ -132,6 +133,11 @@ export default function ProtectPage() {
                         {t.pending ? " (pending)" : ""}
                       </td>
                       <td className="p-2">{classify(t)}</td>
+                      <td className="p-2">
+                        {data.source === "nessie"
+                          ? `Nessie ${t.recordType || "record"}${t.fictional ? " (fictional)" : ""}`
+                          : "Fictional demo"}
+                      </td>
                       <td className="p-2">{formatCurrency(t.amountCents)}</td>
                     </tr>
                   ))}

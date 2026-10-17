@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --test tests/*.test.ts",
-    "verify:integrations": "tsx scripts/verify-integrations.ts"
+    "verify:integrations": "tsx scripts/verify-integrations.ts",
+    "inspect:sandbox": "tsx scripts/inspect-sandbox.ts"
   },
   "dependencies": {
     "lucide-react": "^1.59.0",

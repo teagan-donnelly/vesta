@@ -198,7 +198,11 @@ export function forecastEvents(data: FinancialData): ForecastEvent[] {
       date: b.dueDate,
       amountCents: -b.amountCents,
       label: b.name,
-      kind: /debt/i.test(b.category) ? "debt" : "bill",
+      kind: /subscription/i.test(b.category)
+        ? "subscription"
+        : /debt/i.test(b.category)
+          ? "debt"
+          : "bill",
       merchantKey: key(b.name),
       accountId: b.accountId,
     }));
@@ -214,7 +218,11 @@ export function forecastEvents(data: FinancialData): ForecastEvent[] {
           date,
           amountCents: -bill.amountCents,
           label: bill.name,
-          kind: /debt/i.test(bill.category) ? "debt" : "bill",
+          kind: /subscription/i.test(bill.category)
+            ? "subscription"
+            : /debt/i.test(bill.category)
+              ? "debt"
+              : "bill",
           merchantKey: key(bill.name),
           accountId: bill.accountId,
         });

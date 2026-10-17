@@ -1,5 +1,6 @@
 import { DatabaseZap, Shield, Sparkles } from "lucide-react";
 import { AegisShell } from "@/components/aegis-shell";
+import { SandboxScenario } from "@/components/sandbox-scenario";
 
 export default function SettingsPage() {
   return (
@@ -57,6 +58,7 @@ export default function SettingsPage() {
           </p>
         </div>
       </div>
+      <SandboxScenario />
     </AegisShell>
   );
 }

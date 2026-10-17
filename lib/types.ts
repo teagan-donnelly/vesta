@@ -62,6 +62,8 @@ export interface Transaction {
   amountCents: number;
   accountId: string;
   pending?: boolean;
+  recordType?: "deposit" | "withdrawal" | "purchase";
+  fictional?: boolean;
 }
 
 export interface Bill {

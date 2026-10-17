@@ -4,47 +4,79 @@ Financial protection and cash-flow forecasting, built on the existing Next.js in
 
 ## Run
 
-Use `npm.cmd install`, then `npm.cmd run dev`. Open http://localhost:3000. Keep `NESSIE_API_KEY` and `GEMINI_API_KEY` in your existing `.env.local`; this file is ignored by Git. Keys are only read by server integration modules. Optional `GEMINI_MODEL` overrides the verified default, `gemini-3.5-flash-lite`.
+Run `npm.cmd install`, then `npm.cmd run dev`, and open http://localhost:3000. Keep the existing `NESSIE_API_KEY` and `GEMINI_API_KEY` in `.env.local`; never commit that file. Optional `GEMINI_MODEL` overrides the default `gemini-3.5-flash-lite`. Keys are read only by server integration modules.
 
-## Data modes
+## Preview and confirm the fictional Nessie dataset
 
-The **Data source** selector in every page header switches between **Demo Mode (fictional)** and **Nessie Sandbox Mode**. The selection and simulations persist during client navigation in the current session. A full reload starts in Demo Mode. Changing mode or customer resets the simulation and clears previous records before loading.
+**No records were seeded during this development phase.** Read-only inspection found one **Vesta Fictional Test** customer, one **Vesta fictional checking** account with **$2,000**, and zero deposits, withdrawals, bills, loans or merchants. The real preview endpoint was tested, followed by another read: the balance remained $2,000 and transaction/bill counts remained zero.
 
-Overview, Protect and Domino share one normalized snapshot. Nessie failures produce visible errors without substituting fictional records. Select a sandbox customer in the header when multiple customers exist. Use Retry to refresh a failed request.
+1. Start the app with `npm.cmd run dev` and open **http://localhost:3000/settings**.
+2. In the header, select **Nessie Sandbox Mode** and **Vesta Fictional Test**. Under **Prepare fictional Nessie activity**, select **Vesta fictional checking**.
+3. Click **Preview fictional dataset**. This only reads Nessie and saves a local proposal; it sends no financial creation requests. Review the record table, expected forecast, balance effects, limitations, and expandable exact request bodies.
+4. To authorize writing, check the acknowledgment, type **SEED FICTIONAL DATA** exactly, then click **Confirm and write fictional records to Nessie**. Until you perform this explicit action, no scenario records are created. Previews expire after 30 minutes or when the local date changes. If records or balances change after preview, confirmation is rejected before writing.
+5. After confirmation, the workflow submits each record once and immediately retrieves it through its documented collection endpoint. It then performs a final read-back, displays retrieved record IDs, actual balance and analysis checks, and requests a grounded Gemini risk explanation. It refreshes Vesta's shared data snapshot. If Gemini is unavailable, the report clearly identifies deterministic guidance.
+6. Use **Verify existing Nessie records (read-only)** whenever you want to re-read the actual scenario records without creating anything. Navigate to Overview, Protect and Domino to demonstrate the shared retrieved data.
 
-The real sandbox authenticated successfully during verification but returned **zero customers**. No real sandbox writes were performed. On localhost, the empty state offers **Create fictional sandbox customer**, with an explicit confirmation. It checks for the named fictional customer before creating one customer and a $2,000 checking account. It never creates transactions automatically. If setup is interrupted, inspect the existing customer and accounts through the official Nessie documentation before trying again; duplicate setup is refused. This convenience route rejects hosted and cross-origin requests.
+A full browser reload starts in Demo Mode; select Nessie Sandbox Mode again. Client navigation retains the current mode and simulation. If the dev server uses another port, use that same localhost port for this workflow.
 
-## Protect and Domino walkthrough
+### Proposed story
 
-1. In Demo Mode, open Protect. Rent, utilities and debt payments are classified separately from subscriptions. Review the transaction explanations; flags are review suggestions, not fraud findings.
-2. Select **Simulate removing Spotify**, then use **Compare selected removals in Domino**. The same selection appears in Domino. A subscription whose next charge is outside the 30-day horizon produces no immediate savings.
-3. Compare baseline and scenario ending balances, lowest balances, and the table of affected dates. Both chart panels retain the baseline for comparison.
-4. Choose a future income event and delay it by several days. The deposit moves once; it is not added again. Delaying past the horizon excludes it from the current window.
-5. Try an unexpected expense, delay an optional expense after reviewing its terms, or adjust a selected payment amount. Use **Reset to baseline** to clear all changes. None of these controls writes to Nessie.
-6. Select **Prioritize with Gemini** on Overview, Protect or Domino. Gemini orders verified explanations using structured analysis. It cannot add free-form financial claims to the UI. Missing keys, service errors and invalid output retain deterministic explanations.
+The preview proposes **33 fictional records**, anchored to its displayed date:
 
-## Forecast rules and limitations
+| Records        | Fictional activity                                                                                                                                                    |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 5 deposits     | $1,500 payroll every 14 days, with enough history to estimate future paychecks                                                                                        |
+| 21 withdrawals | Two rent payments, two utility payments, two student-loan payments, two charges each for three subscriptions, eight grocery trips, and one unusual $700 repair charge |
+| 7 bills        | Three subscriptions ($25, $20, $15), $1,800 rent, $140 utilities, a $450 emergency repair, and a $1,000 student-loan payment                                          |
 
-All calculations use integer cents. Starting liquidity consistently sums checking and savings, excluding card debt. The snapshot is a closing balance as of the displayed date (America/New_York); historical transactions are evidence for recurrence and are never replayed against that balance. Forecast days begin tomorrow.
+History contains **$7,500 of deposits and $7,500 of withdrawals**, so the expected closing balance remains the balance retrieved at preview. Completed records can temporarily affect the account as the API applies them: deposits are submitted first, so an initial $2,000 could temporarily rise to $9,500. This effect is shown in the preview and requires explicit acknowledgment. The workflow never resets an account balance or assumes that the server applied the expected balance effects.
 
-Known dated bills supersede inferred events for the same merchant/account near the due date. Future pending events are counted once. Weekly, monthly and annual schedules repeat through the horizon; month-end dates are clamped while retaining their original anchor day. Repeated payroll intervals between 12 and 18 days are approximated as biweekly, and this estimate is disclosed. Transfers or unidentified deposits are not assumed to be recurring payroll. Ordinary discretionary spending is not forecast. Loan payments need a dated bill or transaction history, since a monthly amount alone does not establish a due date.
+For the inspected $2,000 account and current preview dates, the proposed forecast has **$3,450 in upcoming obligations**, **three detected subscriptions**, a **-$450 temporary balance before payroll**, and a **$60 ending-balance improvement** when all three subscriptions are removed. These are **proposal calculations**, not claims that records already exist in Nessie. The preview recalculates for its actual date and retrieved balances. Live values are verified only after confirmation and successful retrieval.
 
-Credit card purchases and card-funded bills do not immediately reduce liquid cash; dated cash-account debt payments do. Checking and savings are pooled, so the forecast does not establish that a specific payment account has enough funds. Credit, Deadbolt and Continuity retain clearly labeled fictional educational/planning examples; they do not infer credit histories, shared ownership or emergency contacts from Nessie.
+### Duplicate and interruption handling
 
-## Integration references
+The server saves immutable proposals, account-level submission markers, write intent and retrieved record IDs in **`.vesta-sandbox/`**, which is ignored by Git and excluded from secret-check staging. API keys are never written into these files. Local file locks prevent concurrent submissions. Each financial POST has durable intent written first; no financial write is automatically retried.
 
-The Nessie client uses the production HTTPS host listed by the [official Nessie documentation](https://prod.nessieisreal.com/docs) and its [published OpenAPI schema](https://prod.nessieisreal.com/nessie-openapi-spec.yaml). It reads customers, customer accounts, and account deposits, withdrawals, bills and loans. Merchant records enrich purchases when available. Monetary API amounts are converted from dollars to cents.
+A preview can be submitted only once. Existing scenario markers in Nessie also block duplicate datasets, including after a local ledger is lost. An account with any submitted/interrupted run is blocked from a second dataset. If a response is lost, read-back fails, or setup is interrupted, the workflow stops and requires manual review of the local ledger and official Nessie records. **Do not delete the ledger or repeatedly try new previews to bypass that protection.** No automatic rollback, updates or deletion routes exist. Existing unrelated records are preserved.
 
-The current official schema documents single-purchase reads but omits the account purchase-list endpoint. The client probes the legacy read-only `/accounts/{id}/purchases` endpoint. If unsupported or unavailable, it displays an explicit coverage warning; it never fabricates purchases. The real empty sandbox cannot verify account-level retrieval; mocked integration tests cover populated responses.
+The old `/api/nessie/seed` customer-creation endpoint is retired (HTTP 410), so it cannot bypass the preview. This workflow operates only on the existing named fictional customer's checking account. It rejects hosted deployments, Vercel environments, and cross-origin confirmation requests.
 
-Gemini uses Google's [server-side generateContent API](https://ai.google.dev/api/generate-content). Only minimal derived explanations are sent; names, account IDs, account numbers, raw transaction descriptions and keys are excluded from prompts. Model-generated IDs are validated against a closed set before verified explanation text is displayed. A live grounded request succeeded with Gemini 3.5 Flash Lite; earlier older-model and larger-model requests returned 404/503 or failed, demonstrating the fallback path.
+## Documented endpoint support
+
+Verified against the [official Nessie documentation](https://prod.nessieisreal.com/docs) and its [published OpenAPI schema](https://prod.nessieisreal.com/nessie-openapi-spec.yaml). Requests use `https://prod-api.nessieisreal.com` and the server-side key query parameter.
+
+| Record      | Documented retrieval                                                | Documented creation                 | Scenario use                                                      |
+| ----------- | ------------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------- |
+| Customers   | `GET /customers`, `GET /customers/{id}`                             | `POST /customers`                   | Read the existing fictional customer only                         |
+| Accounts    | `GET /customers/{id}/accounts`, `GET /accounts/{id}`                | `POST /customers/{id}/accounts`     | Read the existing checking account only                           |
+| Deposits    | `GET /accounts/{id}/deposits`, `GET /deposits/{id}`                 | `POST /accounts/{id}/deposits`      | Completed payroll history                                         |
+| Withdrawals | `GET /accounts/{id}/withdrawals`, `GET /withdrawal/{withdrawal_id}` | `POST /accounts/{id}/withdrawals`   | Fictional spending history                                        |
+| Bills       | `GET /accounts/{id}/bills`, `GET /bills/{billId}`                   | `POST /accounts/{id}/bills`         | Dated upcoming obligations                                        |
+| Merchants   | `GET /merchants`, `GET /merchants/{id}`                             | `POST /merchants`                   | Supported, but no unused merchant records are created             |
+| Loans       | `GET /accounts/{id}/loans`, `GET /loans/{id}`                       | `POST /accounts/{id}/loans`         | Supported reads; student-loan payments use withdrawals and a bill |
+| Purchases   | `GET /purchase/{purchase_id}`                                       | **No creation endpoint documented** | Not created or presented as purchase history                      |
+
+The official schema does **not** document an account purchase-list endpoint. The previous legacy probe was removed. Vesta now uses documented withdrawal records as an explicit fictional spending alternative. Protect displays whether each transaction came from a Nessie deposit or withdrawal. No locally generated transactions substitute for missing API responses. `VESTA_FICTIONAL_V1` descriptions/payees carry labels and categories that are decoded only from records actually returned by Nessie; dates, amounts and balances always come from those responses. The pure proposed-data projection is used only in the clearly labeled preview, never as the live data source.
+
+Deposit/withdrawal amounts use whole dollars as documented by the integer schema, with `medium`, `transaction_date`, `status`, `amount` and `description`; the official documentation's withdrawal example supplies those fields. Bills use the documented create schema. The first real writes and read-backs remain pending user confirmation; mocked tests cannot establish server-side write behavior.
+
+## Demonstrate Protect and Domino after confirmation
+
+1. Overview should show the actual retrieved cash balance and upcoming obligations. It pools checking and savings and excludes card debt.
+2. Protect should identify **StreamNest**, **Pulse Music**, and **CloudPocket** from repeated withdrawal history. Rent, utilities and debt remain distinct from subscriptions. The unusual $700 expense is a review flag, not a fraud determination.
+3. Select **Simulate removing StreamNest**, then open Domino. Compare baseline and scenario ending/lowest balances and affected dates. The baseline remains available. Simulations never change Nessie records.
+4. Try removing all three subscriptions, delaying an income event, adding an unexpected expense, delaying an optional payment, or adjusting a payment amount. Reset restores the baseline. Charges outside the 30-day horizon do not generate immediate savings.
+5. Review the post-seed grounded risk explanation, or select **Prioritize with Gemini** on Overview, Protect or Domino. Gemini only orders verified explanations; arbitrary financial claims cannot enter the UI. Prompts exclude customer names, account IDs/numbers, raw transaction descriptions and credentials.
+
+Forecasts use integer cents and begin tomorrow from the displayed closing-balance snapshot (America/New_York). Historical records are evidence, not replayed against current cash. Known bills supersede inferred matching obligations to avoid double-counting. Payroll intervals are estimated, ordinary discretionary spending is not forecast, and loan amounts alone do not establish payment dates. Credit, Deadbolt and Continuity retain labeled fictional educational/planning examples.
 
 ## Validation
 
-- `npm.cmd test`: financial regression, normalization, error redaction, model-output validation, route validation and duplicate-setup prevention.
+- `npm.cmd test`: regression and mocked integration tests, including preview without writes, consent, normalized read-back, duplicate/concurrent-write prevention, changed snapshots, expiry, missing records and lost responses. All test financial writes go to mocks, never the real API.
 - `npm.cmd run lint`
 - `npm.cmd run build`
-- `npm.cmd run verify:integrations`: limited read-only Nessie verification and one Gemini request; outputs sanitized status and counts only.
-- `npx.cmd tsx scripts/check-secrets.ts`: checks staged files and browser build assets against configured key values without printing them, and verifies `.env.local` remains ignored.
+- `npm.cmd run inspect:sandbox`: read-only real customer/account/collection inspection; sanitized counts only.
+- `npm.cmd run verify:integrations`: read-only Nessie checks and one Gemini request.
+- `npx.cmd tsx scripts/check-secrets.ts`: staged-file/browser-asset checks against configured keys, without printing values; verifies `.env.local` remains ignored.
 
-Route smoke checks cover all seven pages and both data-mode endpoints. No connected browser was available for interactive or visual verification in this development session. Sandbox creation is covered by mocked tests and was not executed against the real API.
+Live scenario seeding, live populated-record retrieval and Gemini explanation of that populated scenario are intentionally pending explicit confirmation. The localhost preview endpoint has been verified against the current real sandbox without creating records.

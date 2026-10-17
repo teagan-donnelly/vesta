@@ -1,5 +1,6 @@
-import type { Account, Customer, FinancialData, Transaction } from "./types";
+import type { Account, Customer, FinancialData } from "./types";
 import { todayIso, isIsoDate, shift } from "./analysis";
+import { parseSandboxLabel } from "./sandbox-records";
 
 // Server modules are only imported by Route Handlers and the verification script.
 const BASE = "https://prod-api.nessieisreal.com";
@@ -68,6 +69,13 @@ export async function loadNessie(customerId?: string): Promise<FinancialData> {
   if (customerId && !selected)
     throw new Error("Selected Nessie customer was not found.");
   const warnings: string[] = [];
+  if (selected?.name === "Vesta Fictional Test")
+    warnings.push(
+      "Fictional Nessie sandbox data. All activity for this test customer is fictional, not real banking activity.",
+    );
+  warnings.push(
+    "The official Nessie schema does not document account purchase history or purchase creation. Spending here uses retrieved withdrawal records; it is not represented as purchase history.",
+  );
   const data: FinancialData = {
     source: "nessie",
     asOf: today,
@@ -123,17 +131,25 @@ export async function loadNessie(customerId?: string): Promise<FinancialData> {
         }
         // Deposits are not necessarily payroll. Only clearly described income is projected.
         const description = str(t.description);
+        const metadata = parseSandboxLabel(description);
         data.transactions.push({
           id: str(t._id),
           accountId: account.id,
           date,
-          merchant: description || (income ? "Deposit" : "Withdrawal"),
+          merchant:
+            metadata?.label ||
+            description ||
+            (income ? "Deposit" : "Withdrawal"),
           description,
-          category: income
-            ? /payroll|salary|paycheck/i.test(description)
-              ? "Income"
-              : "Deposit"
-            : "Unknown",
+          recordType: income ? "deposit" : "withdrawal",
+          fictional: Boolean(metadata),
+          category:
+            metadata?.category ||
+            (income
+              ? /payroll|salary|paycheck/i.test(description)
+                ? "Income"
+                : "Deposit"
+              : "Unknown"),
           amountCents: cents(t.amount) * (income ? 1 : -1),
           pending: str(t.status) !== "completed",
         });
@@ -178,11 +194,14 @@ export async function loadNessie(customerId?: string): Promise<FinancialData> {
           b.recurring_date <= 31
             ? b.recurring_date
             : undefined,
-        name: str(b.payee || b.nickname),
+        name:
+          parseSandboxLabel(str(b.payee))?.label || str(b.payee || b.nickname),
         dueDate: date,
         amountCents: cents(b.payment_amount),
-        category: /credit|loan|debt/i.test(str(b.payee)) ? "Debt" : "Bill",
-        essential: true,
+        category:
+          parseSandboxLabel(str(b.payee))?.category ||
+          (/credit|loan|debt/i.test(str(b.payee)) ? "Debt" : "Bill"),
+        essential: parseSandboxLabel(str(b.payee))?.kind !== "subscription",
       });
     }
     data.loans.push(
@@ -193,43 +212,6 @@ export async function loadNessie(customerId?: string): Promise<FinancialData> {
         paymentCents: cents(l.monthly_payment),
       })),
     );
-    // The published 2026 schema does not document an account purchases list.
-    // Probe the legacy read-only endpoint, and explicitly disclose lack of support.
-    let purchases: RecordValue[] = [];
-    try {
-      purchases = records(await nessieRequest(`${path}/purchases`));
-    } catch {
-      warnings.push(
-        `Purchases could not be retrieved for ${account.name}; analysis may be incomplete.`,
-      );
-    }
-    for (const p of purchases) {
-      if (["cancelled", "canceled"].includes(str(p.status))) continue;
-      let merchant: RecordValue = {};
-      if (str(p.merchant_id)) {
-        try {
-          merchant = (await nessieRequest(
-            `/merchants/${encodeURIComponent(str(p.merchant_id))}`,
-          )) as RecordValue;
-        } catch {
-          warnings.push("Merchant details unavailable for a purchase.");
-        }
-      }
-      const date = str(p.purchase_date).slice(0, 10);
-      if (!isIsoDate(date)) continue;
-      data.transactions.push({
-        id: str(p._id),
-        accountId: account.id,
-        date,
-        merchant: str(merchant.name) || "Unknown merchant",
-        category: Array.isArray(merchant.category)
-          ? merchant.category.join(", ")
-          : str(merchant.category) || "Unknown",
-        description: str(p.description),
-        amountCents: -cents(p.amount),
-        pending: str(p.status) !== "completed",
-      } as Transaction);
-    }
   }
   if (data.loans.length)
     warnings.push(

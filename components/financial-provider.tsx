@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type { DataSource, FinancialData, Simulation } from "@/lib/types";
+import Link from "next/link";
 
 type State = {
   mode: DataSource;
@@ -18,7 +19,7 @@ type State = {
   setCustomer: (id: string) => void;
   simulation: Simulation;
   setSimulation: (value: Simulation) => void;
-  reload: () => void;
+  reload: (preserveSnapshot?: boolean) => void;
 };
 const Context = createContext<State | null>(null);
 export function FinancialProvider({ children }: { children: ReactNode }) {
@@ -46,6 +47,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
       })
       .catch((e) => {
         if (e.name !== "AbortError") {
+          setData(null);
           setError(e.message || "Data unavailable.");
           setLoading(false);
         }
@@ -80,8 +82,12 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         setCustomer,
         simulation,
         setSimulation,
-        reload: () => {
-          clear();
+        reload: (preserveSnapshot = false) => {
+          if (preserveSnapshot) {
+            setError("");
+            setLoading(true);
+            setSimulation({});
+          } else clear();
           setVersion((v) => v + 1);
         },
       }}
@@ -107,7 +113,7 @@ export function DataStatus() {
       {error && (
         <div role="alert" className="mb-4 rounded-xl bg-orange-50 p-4">
           {error}{" "}
-          <button onClick={reload} className="underline">
+          <button onClick={() => reload()} className="underline">
             Retry
           </button>
         </div>
@@ -120,49 +126,14 @@ export function DataStatus() {
           {w}
         </p>
       ))}
-      {data && data.source === "nessie" && !data.customers.length && (
-        <SeedCustomer />
+      {data && data.source === "nessie" && (
+        <p className="mb-4 text-sm">
+          <Link href="/settings" className="text-sky-700 underline">
+            Preview a fictional sandbox scenario in Settings
+          </Link>
+          . Records are created only after explicit confirmation on localhost.
+        </p>
       )}
     </>
-  );
-}
-function SeedCustomer() {
-  const { reload } = useFinancial();
-  const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-  return (
-    <div className="mb-4 rounded-xl bg-white p-4">
-      <p>
-        Create one fictional Vesta Test customer with a $2,000 checking account.
-        Available on localhost only. Existing records are checked first;
-        interrupted setup is never retried automatically.
-      </p>
-      <button
-        disabled={busy}
-        className="mt-3 rounded-lg bg-slate-900 p-3 text-white disabled:opacity-50"
-        onClick={async () => {
-          if (
-            !window.confirm(
-              "Create a fictional test customer and $2,000 sandbox account?",
-            )
-          )
-            return;
-          setBusy(true);
-          try {
-            const r = await fetch("/api/nessie/seed", { method: "POST" });
-            const result = await r.json();
-            if (!r.ok) throw new Error(result.error);
-            reload();
-          } catch (e) {
-            setMessage(e instanceof Error ? e.message : "Creation failed.");
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        Create fictional sandbox customer
-      </button>
-      <p role="status">{message}</p>
-    </div>
   );
 }
