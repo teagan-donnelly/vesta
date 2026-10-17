@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { DataStatus, useFinancial } from "./financial-provider";
 import { Badge, Button } from "./ui";
+import { DemoControls } from "./demo-controls";
 const navItems = [
   { href: "/", label: "Overview", icon: WalletCards },
   { href: "/protect", label: "Protect", icon: ShieldCheck },
@@ -26,6 +27,8 @@ const navItems = [
   { href: "/deadbolt", label: "Deadbolt", icon: ShieldPlus },
   { href: "/continuity", label: "Continuity", icon: Files },
   { href: "/settings", label: "Settings", icon: Settings2 },
+  { href: "/shared", label: "Shared planning", icon: Files },
+  { href: "/assistant", label: "Ask Vesta", icon: ShieldCheck },
 ];
 export function AegisShell({
   title,
@@ -208,9 +211,16 @@ export function AegisShell({
           </div>
         </header>
         <main id="main-content" className="page-content" tabIndex={-1}>
+          <DemoControls />
           <header className="page-heading">
             <div>
-              <div className="eyebrow">PERSONAL FINANCE</div>
+              <div className="eyebrow">
+                {pathname === "/shared"
+                  ? "SHARED PLANNING"
+                  : pathname === "/assistant"
+                    ? "PERSONAL GUIDANCE"
+                    : "PERSONAL FINANCE"}
+              </div>
               <h1>{title}</h1>
               <p>{subtitle}</p>
             </div>

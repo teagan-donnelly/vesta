@@ -17,6 +17,7 @@ import {
 import type { DataSource, FinancialData, Simulation } from "@/lib/types";
 import { Button, Notice, EmptyState, LoadingState } from "./ui";
 import Link from "next/link";
+import { ensureDemoSession } from "@/lib/demo-session-client";
 
 type State = {
   mode: DataSource;
@@ -26,6 +27,7 @@ type State = {
   loading: boolean;
   customer: string;
   setCustomer: (id: string) => void;
+  setDemoProfile: (id: string) => void;
   simulation: Simulation;
   setSimulation: (value: Simulation) => void;
   reload: (preserveSnapshot?: boolean) => void;
@@ -57,10 +59,16 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
   const visibleError = errorProfile === preferences ? error : "";
   useEffect(() => {
     const controller = new AbortController();
-    fetch(
-      `/api/financial-data?mode=${mode}&customer=${encodeURIComponent(customer)}`,
-      { signal: controller.signal, cache: "no-store" },
+    (mode === "demo" && customer.startsWith("demo:")
+      ? ensureDemoSession()
+      : Promise.resolve()
     )
+      .then(() =>
+        fetch(
+          `/api/financial-data?mode=${mode}&customer=${encodeURIComponent(customer)}`,
+          { signal: controller.signal, cache: "no-store" },
+        ),
+      )
       .then(async (r) => {
         const result = await r.json();
         if (!r.ok) throw new Error(result.error);
@@ -77,6 +85,13 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
             result.customers[0]?.id ||
             "";
         setData(result);
+        if (mode === "demo" && customer.startsWith("demo:"))
+          setScenarioState({
+            profile: JSON.stringify({ mode, customer }),
+            value:
+              (result as FinancialData & { planningSimulation?: Simulation })
+                .planningSimulation || {},
+          });
         setDataProfile(JSON.stringify({ mode, customer: resolvedCustomer }));
         setError("");
         setLoading(false);
@@ -108,7 +123,10 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
   function setMode(value: DataSource) {
     if (value === mode) return;
     clear();
-    saveProfile({ mode: value, customer });
+    saveProfile({
+      mode: value,
+      customer: customer.startsWith("demo:") ? "" : customer,
+    });
   }
   function setCustomer(value: string) {
     if (value === customer) return;
@@ -125,6 +143,10 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         loading: loading || (!visibleData && !visibleError),
         customer,
         setCustomer,
+        setDemoProfile: (id) => {
+          clear();
+          saveProfile({ mode: "demo", customer: `demo:${id}` });
+        },
         simulation,
         setSimulation,
         reload: (preserve = false) => {

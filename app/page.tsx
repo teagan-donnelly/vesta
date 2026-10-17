@@ -10,6 +10,7 @@ import { Panel, Amount, Badge, EmptyState } from "@/components/ui";
 import { ActivityTable, dateLabel } from "@/components/activity-table";
 import { ForecastChart } from "@/components/forecast-chart";
 import { ExplanationPanel } from "@/components/explanation-panel";
+import { CollaborativeLink } from "@/components/collaborative-link";
 import {
   alertsFor,
   forecastEvents,
@@ -54,6 +55,7 @@ export default function HomePage() {
         </Link>
       }
     >
+      <CollaborativeLink />
       <section
         className="balance-overview"
         aria-label="Your financial position"

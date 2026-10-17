@@ -1,5 +1,6 @@
 ﻿"use client";
 import Link from "next/link";
+import { CollaborativeLink } from "@/components/collaborative-link";
 import { useState } from "react";
 import { ArrowUpRight, RotateCcw } from "lucide-react";
 import { AegisShell } from "@/components/aegis-shell";
@@ -82,6 +83,7 @@ export default function DominoPage() {
         </Button>
       }
     >
+      <CollaborativeLink publish />
       <MetricGrid
         items={[
           {

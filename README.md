@@ -1,6 +1,12 @@
 ﻿# Vesta
 
-Financial protection and cash-flow forecasting, built on the existing Next.js interface for Technica 2026.
+Privacy-first financial intelligence, personal cash-flow forecasting, and collaborative commitments, built on the existing Next.js interface for Technica 2026.
+
+## Collaborative hackathon demonstration
+
+Start at **http://localhost:3000/shared** and choose **Explore as Kevin**. The [complete two-minute demonstration, setup, privacy architecture, database migration, credentials, and prototype limitations](docs/collaborative-demo.md) are documented together. Shared planning uses fictional Ava/Kevin/Maya profiles and server-side selective disclosure, reuses Domino, and includes a bounded English/Spanish assistant with optional Backboard memory. This switcher is not authentication and never maps to Nessie customers.
+
+New optional server variables are `BACKBOARD_API_KEY` and `TIGER_DATABASE_URL`. Without them, the app labels its local fictional planning adapter and local opted-in preferences. With Tiger Data configured, run `npm.cmd run db:migrate`; use `npm.cmd run verify:planning` for actual connectivity checks. `npm.cmd run demo:smoke` exercises the complete flow against a running localhost app. Do not claim provider connections solely from configuration.
 
 ## Run
 

@@ -44,6 +44,16 @@ export default function DeadboltPage() {
         financial records. Mark obligations you want to review; selections do
         not change payments or permissions.
       </Notice>
+      <Notice>
+        <p>
+          For collaborative planning, review your{" "}
+          <Link href="/shared">
+            shared commitments and disclosure permissions
+          </Link>
+          . Agree on responsibility before a transition. Vesta never transfers
+          obligations or removes participants automatically.
+        </p>
+      </Notice>
       <MetricGrid
         items={[
           {

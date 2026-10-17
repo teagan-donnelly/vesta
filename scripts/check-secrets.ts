@@ -3,7 +3,12 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 loadEnvConfig(process.cwd());
-const keys = ["NESSIE_API_KEY", "GEMINI_API_KEY"]
+const keys = [
+  "NESSIE_API_KEY",
+  "GEMINI_API_KEY",
+  "BACKBOARD_API_KEY",
+  "TIGER_DATABASE_URL",
+]
   .map((k) => process.env[k])
   .filter((v): v is string => Boolean(v));
 function assertNoKey(contents: Buffer | string) {
@@ -35,7 +40,7 @@ const staged = execFileSync(
   .filter(Boolean);
 for (const path of staged) {
   if (
-    /(^|\/)(node_modules|\.next|\.tmp|\.vesta-sandbox)(\/|$)|(^|\/)\.env\.local$/.test(
+    /(^|\/)(node_modules|\.next|\.tmp|\.vesta-sandbox|\.vesta-demo)(\/|$)|(^|\/)\.env\.local$/.test(
       path,
     )
   )

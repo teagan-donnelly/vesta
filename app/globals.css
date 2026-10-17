@@ -1522,3 +1522,205 @@ summary:focus-visible,
   color: var(--muted);
   font-size: 14px;
 }
+.demo-controls {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: end;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 20px;
+  margin-bottom: 26px;
+}
+.demo-controls label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  flex: 1;
+  min-width: 210px;
+  max-width: 360px;
+}
+.demo-controls select {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--foreground);
+  padding: 9px 12px;
+  min-height: 42px;
+  width: 100%;
+}
+.demo-start,
+.shared-toolbar,
+.member-form,
+.report-form {
+  display: flex;
+  gap: 16px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.shared-toolbar {
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.shared-toolbar .field {
+  min-width: 260px;
+}
+.member-form {
+  padding: 0 20px 20px;
+}
+.report-form {
+  margin-top: 20px;
+}
+.commitment-totals {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  padding: 0 20px 20px;
+}
+.commitment-totals span {
+  color: var(--muted);
+  font-size: 13px;
+  display: block;
+}
+.commitment-totals strong {
+  font-size: 22px;
+  font-weight: 600;
+  display: block;
+  margin-top: 7px;
+}
+.commitment-totals strong .amount {
+  color: var(--foreground);
+  font-size: 22px;
+}
+.planning-progress {
+  padding: 0 20px 22px;
+  display: grid;
+  gap: 14px;
+}
+.planning-progress label {
+  color: var(--muted);
+  font-size: 13px;
+  display: grid;
+  gap: 8px;
+}
+.planning-progress progress {
+  width: 100%;
+  height: 8px;
+  accent-color: var(--accent);
+}
+.disclosure-expenses {
+  max-height: 260px;
+  overflow: auto;
+  padding: 18px 0;
+}
+.assistant-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(290px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.conversation {
+  display: grid;
+  gap: 16px;
+  padding: 0 24px 24px;
+  max-height: 540px;
+  overflow: auto;
+}
+.conversation-message {
+  padding: 16px 18px;
+  background: #f4f6f9;
+  border-radius: 6px;
+  font-size: 15px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.conversation-message.user {
+  background: #f8f1f3;
+  margin-left: 28px;
+}
+.conversation-message strong {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.chat-form {
+  border-top: 1px solid var(--line);
+  padding: 20px 24px;
+  display: grid;
+  gap: 16px;
+}
+.chat-form .field:first-child {
+  max-width: 180px;
+}
+.assistant-prompts {
+  padding: 0 24px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.assistant-prompts button {
+  font-size: 13px;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: white;
+  border-radius: 5px;
+  color: var(--accent);
+}
+.scenario-proposal {
+  background: #f8f1f3;
+  padding: 20px 24px;
+  border-block: 1px solid #e6d4da;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+.scenario-proposal strong,
+.scenario-proposal p {
+  flex-basis: 100%;
+}
+.scenario-proposal p {
+  color: var(--muted);
+  font-size: 14px;
+}
+@media (max-width: 1100px) {
+  .commitment-totals {
+    grid-template-columns: 1fr 1fr;
+  }
+  .assistant-layout {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 740px) {
+  .shared-toolbar .field {
+    min-width: 0;
+    width: 100%;
+  }
+  .demo-controls label {
+    min-width: 0;
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .demo-controls select {
+    font-size: 16px;
+  }
+  .commitment-totals {
+    gap: 16px;
+  }
+  .commitment-totals strong,
+  .commitment-totals strong .amount {
+    font-size: 19px;
+  }
+  .conversation {
+    padding: 0 16px 16px;
+  }
+  .chat-form,
+  .scenario-proposal {
+    padding: 16px;
+  }
+  .conversation-message.user {
+    margin-left: 12px;
+  }
+}

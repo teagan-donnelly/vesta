@@ -4,16 +4,21 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/prepare-build.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --test tests/*.test.ts",
     "verify:integrations": "tsx scripts/verify-integrations.ts",
-    "inspect:sandbox": "tsx scripts/inspect-sandbox.ts"
+    "inspect:sandbox": "tsx scripts/inspect-sandbox.ts",
+    "db:migrate": "tsx scripts/migrate-planning.ts",
+    "verify:planning": "tsx scripts/verify-planning.ts",
+    "demo:smoke": "tsx scripts/demo-smoke.ts"
   },
   "dependencies": {
     "lucide-react": "^1.59.0",
     "next": "16.4.2",
+    "pg": "^8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "recharts": "^3.10.1"
@@ -21,10 +26,12 @@
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
+    "pg-mem": "^3.0.14",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5"

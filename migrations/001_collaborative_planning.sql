@@ -1,0 +1,16 @@
+BEGIN;
+CREATE EXTENSION IF NOT EXISTS timescaledb;
+CREATE TABLE IF NOT EXISTS vesta_demo_sessions(id uuid PRIMARY KEY, as_of text NOT NULL);
+CREATE TABLE IF NOT EXISTS vesta_demo_profiles(session_id uuid REFERENCES vesta_demo_sessions(id) ON DELETE CASCADE,id text CHECK(id IN ('ava','kevin','maya')),PRIMARY KEY(session_id,id));
+CREATE TABLE IF NOT EXISTS vesta_workspaces(session_id uuid NOT NULL,id text NOT NULL,owner_id text NOT NULL,payload jsonb NOT NULL,PRIMARY KEY(session_id,id),FOREIGN KEY(session_id,owner_id) REFERENCES vesta_demo_profiles(session_id,id));
+CREATE TABLE IF NOT EXISTS vesta_memberships(session_id uuid,workspace_id text,profile_id text,PRIMARY KEY(session_id,workspace_id,profile_id),FOREIGN KEY(session_id,workspace_id) REFERENCES vesta_workspaces(session_id,id) ON DELETE CASCADE,FOREIGN KEY(session_id,profile_id) REFERENCES vesta_demo_profiles(session_id,id));
+CREATE TABLE IF NOT EXISTS vesta_commitments(session_id uuid,id text,workspace_id text NOT NULL,owner_id text NOT NULL,amount_cents bigint NOT NULL CHECK(amount_cents BETWEEN 1 AND 100000000),due_date text NOT NULL,payload jsonb NOT NULL,PRIMARY KEY(session_id,id),FOREIGN KEY(session_id,workspace_id) REFERENCES vesta_workspaces(session_id,id) ON DELETE CASCADE,FOREIGN KEY(session_id,workspace_id,owner_id) REFERENCES vesta_memberships(session_id,workspace_id,profile_id));
+CREATE TABLE IF NOT EXISTS vesta_contributions(session_id uuid,commitment_id text,profile_id text,expected_cents bigint NOT NULL CHECK(expected_cents>=0),reported_cents bigint NOT NULL CHECK(reported_cents>=0 AND reported_cents<=expected_cents),PRIMARY KEY(session_id,commitment_id,profile_id),FOREIGN KEY(session_id,commitment_id) REFERENCES vesta_commitments(session_id,id) ON DELETE CASCADE,FOREIGN KEY(session_id,profile_id) REFERENCES vesta_demo_profiles(session_id,id));
+CREATE TABLE IF NOT EXISTS vesta_consents(session_id uuid,workspace_id text,profile_id text,payload jsonb NOT NULL,PRIMARY KEY(session_id,workspace_id,profile_id),FOREIGN KEY(session_id,workspace_id,profile_id) REFERENCES vesta_memberships(session_id,workspace_id,profile_id) ON DELETE CASCADE);
+CREATE TABLE IF NOT EXISTS vesta_private_plans(session_id uuid,profile_id text,payload jsonb NOT NULL,PRIMARY KEY(session_id,profile_id),FOREIGN KEY(session_id,profile_id) REFERENCES vesta_demo_profiles(session_id,id));
+CREATE TABLE IF NOT EXISTS vesta_readiness_snapshots(recorded_at timestamptz NOT NULL,session_id uuid NOT NULL,profile_id text NOT NULL,workspace_id text NOT NULL,commitment_id text NOT NULL,status text NOT NULL,payload jsonb NOT NULL,PRIMARY KEY(recorded_at,session_id,profile_id,commitment_id));
+SELECT create_hypertable('vesta_readiness_snapshots',by_range('recorded_at'),if_not_exists=>TRUE);
+CREATE INDEX IF NOT EXISTS vesta_readiness_scope ON vesta_readiness_snapshots(session_id,profile_id,recorded_at DESC);
+-- Only status history, never private balances/transactions, is retained here.
+CREATE OR REPLACE VIEW vesta_daily_readiness AS SELECT session_id,profile_id,workspace_id,time_bucket('1 day',recorded_at) AS day,count(*) AS evaluations,count(*) FILTER(WHERE status='may be at risk') AS at_risk_evaluations FROM vesta_readiness_snapshots GROUP BY session_id,profile_id,workspace_id,day;
+COMMIT;
