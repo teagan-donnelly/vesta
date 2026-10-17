@@ -23,9 +23,14 @@ function scan(path: string) {
     else assertNoKey(readFileSync(child));
   }
 }
-const staged = execFileSync("git", ["diff", "--cached", "--name-only", "-z"], {
-  encoding: "utf8",
-})
+// Deleted paths have no staged contents to scan.
+const staged = execFileSync(
+  "git",
+  ["diff", "--cached", "--diff-filter=ACMRT", "--name-only", "-z"],
+  {
+    encoding: "utf8",
+  },
+)
   .split("\0")
   .filter(Boolean);
 for (const path of staged) {

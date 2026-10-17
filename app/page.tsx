@@ -6,7 +6,7 @@ import {
   useFinancial,
   FinancialLoading,
 } from "@/components/financial-provider";
-import { Panel, MetricGrid, Amount, Badge, EmptyState } from "@/components/ui";
+import { Panel, Amount, Badge, EmptyState } from "@/components/ui";
 import { ActivityTable, dateLabel } from "@/components/activity-table";
 import { ForecastChart } from "@/components/forecast-chart";
 import { ExplanationPanel } from "@/components/explanation-panel";
@@ -54,35 +54,69 @@ export default function HomePage() {
         </Link>
       }
     >
-      <MetricGrid
-        items={[
-          {
-            label: "Total available balance",
-            value: <Amount cents={liquidBalance(data)} />,
-            note: `${formatCurrency(checking)} checking · ${formatCurrency(savings)} savings`,
-          },
-          {
-            label: "Upcoming obligations",
-            value: (
+      <section
+        className="balance-overview"
+        aria-label="Your financial position"
+      >
+        <div className="balance-primary">
+          <p className="balance-label">Available balance</p>
+          <div className="balance-value">
+            <Amount cents={liquidBalance(data)} />
+          </div>
+          <p className="balance-description">
+            Across your checking and savings accounts
+          </p>
+          <dl className="balance-breakdown">
+            <div>
+              <dt>Checking</dt>
+              <dd>
+                <Amount cents={checking} />
+              </dd>
+            </div>
+            <div>
+              <dt>Savings</dt>
+              <dd>
+                <Amount cents={savings} />
+              </dd>
+            </div>
+          </dl>
+        </div>
+        <div className="balance-outlook">
+          <div className="outlook-row">
+            <div>
+              <p className="balance-label">Upcoming obligations</p>
+              <span className="subtext">
+                Known and estimated · next 30 days
+              </span>
+            </div>
+            <strong>
               <Amount
                 cents={obligations.reduce((s, e) => s - e.amountCents, 0)}
               />
-            ),
-            note: "Known and estimated · next 30 days",
-          },
-          {
-            label: "Monthly subscriptions",
-            value: <Amount cents={monthlySubscriptionCost(subscriptions)} />,
-            note: `${subscriptions.length} detected recurring services`,
-          },
-          {
-            label: "Lowest projected balance",
-            value: <Amount cents={forecast.lowestBalanceCents} />,
-            note: dateLabel(forecast.lowestBalanceDate, true),
-            tone: forecast.lowestBalanceCents < 0 ? "negative" : undefined,
-          },
-        ]}
-      />
+            </strong>
+          </div>
+          <div className="outlook-row">
+            <div>
+              <p className="balance-label">Lowest projected balance</p>
+              <span className="subtext">
+                {dateLabel(forecast.lowestBalanceDate, true)}
+              </span>
+            </div>
+            <strong
+              className={forecast.lowestBalanceCents < 0 ? "negative" : ""}
+            >
+              <Amount cents={forecast.lowestBalanceCents} />
+            </strong>
+          </div>
+          <Link href="/protect" className="subscription-summary">
+            <span>
+              {subscriptions.length} recurring services ·{" "}
+              <Amount cents={monthlySubscriptionCost(subscriptions)} /> / month
+            </span>
+            <ArrowUpRight size={16} />
+          </Link>
+        </div>
+      </section>
       <div className="dashboard-grid">
         <Panel
           title="Cash outlook"
@@ -109,7 +143,7 @@ export default function HomePage() {
               </strong>
             </div>
           </div>
-          <ForecastChart points={projectionSeries(forecast)} height={225} />
+          <ForecastChart points={projectionSeries(forecast)} height={360} />
           <div className="forecast-caption">
             <span>Known bills and inferred recurring cash activity</span>
             <span>Everyday discretionary spending excluded</span>
@@ -178,7 +212,7 @@ export default function HomePage() {
               obligations.slice(0, 5).map((e) => (
                 <div className="structured-row" key={`${e.id}:${e.date}`}>
                   <div>
-                    <strong style={{ fontSize: 11, fontWeight: 500 }}>
+                    <strong style={{ fontSize: 14, fontWeight: 500 }}>
                       {e.label}
                     </strong>
                     <span className="subtext">

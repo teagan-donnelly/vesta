@@ -91,7 +91,7 @@ export function ExplanationPanel({ scenario = false }: { scenario?: boolean }) {
       </div>
       <details
         className="panel-body"
-        style={{ fontSize: 11, color: "#5f6f85" }}
+        style={{ fontSize: 14, color: "#5f6f85" }}
       >
         <summary>More guidance & assumptions</summary>
         <ul style={{ paddingLeft: 16, marginTop: 10, lineHeight: 1.9 }}>

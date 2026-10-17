@@ -13,7 +13,7 @@ export function ReviewChecklist({
           style={{
             display: "flex",
             justifyContent: "space-between",
-            fontSize: 10,
+            fontSize: 12,
             color: "#5f6f85",
             marginBottom: 10,
           }}

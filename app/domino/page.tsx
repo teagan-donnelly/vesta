@@ -141,7 +141,7 @@ export default function DominoPage() {
             <ForecastChart
               points={projectionSeries(baseline)}
               scenarioPoints={projectionSeries(scenario)}
-              height={310}
+              height={380}
             />
             <div className="forecast-caption">
               <span>
@@ -170,7 +170,7 @@ export default function DominoPage() {
             title="Daily balance comparison"
             description="The exact values behind both chart lines."
             action={
-              <label className="check-row" style={{ margin: 0, fontSize: 10 }}>
+              <label className="check-row" style={{ margin: 0, fontSize: 12 }}>
                 <input
                   type="checkbox"
                   checked={onlyAffected}
@@ -414,7 +414,7 @@ export default function DominoPage() {
             </div>
             <p
               className="subtext"
-              style={{ fontSize: 10, marginTop: 16, lineHeight: 1.8 }}
+              style={{ fontSize: 12, marginTop: 16, lineHeight: 1.8 }}
             >
               Estimates use known bills and repeated activity. Everyday
               discretionary spending is excluded. This simulation is not a

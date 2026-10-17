@@ -13,7 +13,7 @@ export function LocalSandboxSetup() {
       <summary
         style={{
           padding: "17px 20px",
-          fontSize: 12,
+          fontSize: 14,
           fontWeight: 500,
           cursor: "pointer",
         }}

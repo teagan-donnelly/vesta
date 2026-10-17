@@ -169,7 +169,7 @@ export default function DeadboltPage() {
         {data.accounts.map((account) => (
           <div key={account.id} className="structured-row">
             <div>
-              <strong style={{ fontSize: 12, fontWeight: 500 }}>
+              <strong style={{ fontSize: 14, fontWeight: 500 }}>
                 {account.name}
               </strong>
               <span className="subtext">{account.type}</span>

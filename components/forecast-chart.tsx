@@ -18,7 +18,7 @@ type Point = { date: string; balanceCents: number };
 export function ForecastChart({
   points,
   scenarioPoints,
-  height = 270,
+  height = 360,
 }: {
   points: Point[];
   scenarioPoints?: Point[];
@@ -65,14 +65,14 @@ export function ForecastChart({
         >
           <LineChart
             data={rows}
-            margin={{ top: 12, right: 18, bottom: 4, left: 2 }}
+            margin={{ top: 16, right: 24, bottom: 16, left: 0 }}
             accessibilityLayer
           >
             <CartesianGrid stroke="#edf0f3" vertical={false} />
             <XAxis
               dataKey="date"
               tickFormatter={(value) => dateLabel(value)}
-              tick={{ fontSize: 10, fill: "#5f6f85" }}
+              tick={{ fontSize: 14, fill: "#5f6f85" }}
               axisLine={false}
               tickLine={false}
               minTickGap={55}
@@ -80,7 +80,7 @@ export function ForecastChart({
             />
             <YAxis
               domain={domain}
-              width={58}
+              width={72}
               tickFormatter={(value) =>
                 new Intl.NumberFormat("en-US", {
                   style: "currency",
@@ -89,7 +89,7 @@ export function ForecastChart({
                   maximumFractionDigits: 1,
                 }).format(value / 100)
               }
-              tick={{ fontSize: 10, fill: "#5f6f85" }}
+              tick={{ fontSize: 14, fill: "#5f6f85" }}
               axisLine={false}
               tickLine={false}
               tickMargin={8}

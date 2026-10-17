@@ -54,7 +54,7 @@ export function ActivityTable({
               setVisible(limit);
             }}
           />
-          <span className="muted" style={{ fontSize: 11 }}>
+          <span className="muted" style={{ fontSize: 14 }}>
             {rows.length} records
           </span>
         </div>

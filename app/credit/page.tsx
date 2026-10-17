@@ -81,7 +81,7 @@ export default function CreditPage() {
           {cards.map((card) => (
             <div className="structured-row" key={card.id}>
               <div>
-                <strong style={{ fontSize: 12, fontWeight: 500 }}>
+                <strong style={{ fontSize: 14, fontWeight: 500 }}>
                   {card.name}
                 </strong>
                 <span className="subtext">
@@ -94,7 +94,7 @@ export default function CreditPage() {
           {debt.map((e) => (
             <div className="structured-row" key={e.id}>
               <div>
-                <strong style={{ fontSize: 12, fontWeight: 500 }}>
+                <strong style={{ fontSize: 14, fontWeight: 500 }}>
                   {e.label}
                 </strong>
                 <span className="subtext">

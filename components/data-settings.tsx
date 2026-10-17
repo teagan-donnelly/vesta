@@ -25,7 +25,7 @@ export function DataSettings() {
                 Change sources using the control in the top bar.
               </span>
             </div>
-            <span style={{ fontSize: 12 }}>
+            <span style={{ fontSize: 14 }}>
               {mode === "nessie" ? "Capital One Nessie" : "Fictional demo"}
             </span>
           </div>
@@ -36,7 +36,7 @@ export function DataSettings() {
                 Mode and profile are remembered on this browser.
               </span>
             </div>
-            <span style={{ fontSize: 12 }}>
+            <span style={{ fontSize: 14 }}>
               {profile?.name || "Not loaded"}
             </span>
           </div>
@@ -92,7 +92,7 @@ export function DataSettings() {
           description="Calculated first. Explained with context."
         >
           <div className="panel-body">
-            <p style={{ fontSize: 12, lineHeight: 1.9, color: "#5f6f85" }}>
+            <p style={{ fontSize: 14, lineHeight: 1.9, color: "#5f6f85" }}>
               Vesta calculates balances and forecasts. Gemini can prioritize
               verified explanations, without adding financial claims or changing
               the numbers.

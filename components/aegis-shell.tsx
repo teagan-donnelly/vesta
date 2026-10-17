@@ -1,5 +1,4 @@
 ﻿"use client";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -104,14 +103,8 @@ export function AegisShell({
             aria-label="Vesta overview"
             onClick={() => setMobileOpen(false)}
           >
-            <Image
-              src="/vesta-logo.png"
-              alt="Vesta: a goddess holding a torch beside the VESTA wordmark"
-              width={1188}
-              height={836}
-              priority
-              sizes="184px"
-            />
+            <span className="brand-wordmark">VESTA</span>
+            <span className="brand-caption">Your money, in perspective.</span>
           </Link>
           <button
             className="icon-button mobile-close"
