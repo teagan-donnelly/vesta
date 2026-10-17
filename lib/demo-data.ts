@@ -29,7 +29,7 @@ export const accounts: Account[] = [
     type: "Checking",
     name: "Everyday Checking",
     balanceCents: 182450,
-    institution: "Aegis Demo Bank",
+    institution: "Vesta Demo Bank",
   },
   {
     id: "account-savings",
@@ -37,7 +37,7 @@ export const accounts: Account[] = [
     type: "Savings",
     name: "High Yield Savings",
     balanceCents: 224800,
-    institution: "Aegis Demo Bank",
+    institution: "Vesta Demo Bank",
   },
   {
     id: "account-card",
@@ -45,7 +45,7 @@ export const accounts: Account[] = [
     type: "Credit Card",
     name: "Rewards Card",
     balanceCents: 146250,
-    institution: "Aegis Demo Bank",
+    institution: "Vesta Demo Bank",
   },
 ];
 

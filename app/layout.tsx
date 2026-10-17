@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { FinancialProvider } from "@/components/financial-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,14 +14,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aegis | Financial Protection Intelligence",
-  description: "AI-powered financial protection and intelligence platform for cash-flow forecasting, recurring charges, and preparedness.",
+  title: "Vesta | Financial Protection Intelligence",
+  description:
+    "AI-powered financial protection and intelligence platform for cash-flow forecasting, recurring charges, and preparedness.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full bg-slate-100 text-slate-900">{children}</body>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-full bg-slate-100 text-slate-900">
+        <FinancialProvider>{children}</FinancialProvider>
+      </body>
     </html>
   );
 }

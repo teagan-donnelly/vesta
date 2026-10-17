@@ -1,5 +1,40 @@
 export type DataSource = "demo" | "nessie";
 
+export interface FinancialData {
+  source: DataSource;
+  asOf: string;
+  customers: Customer[];
+  accounts: Account[];
+  transactions: Transaction[];
+  bills: Bill[];
+  loans: {
+    id: string;
+    accountId: string;
+    amountCents: number;
+    paymentCents: number;
+  }[];
+  warnings: string[];
+}
+
+export interface ForecastEvent {
+  id: string;
+  date: string;
+  amountCents: number;
+  label: string;
+  kind: "subscription" | "bill" | "debt" | "income" | "purchase";
+  merchantKey: string;
+  accountId?: string;
+}
+
+export interface Simulation {
+  removedSubscriptions?: string[];
+  eventId?: string;
+  delayDays?: number;
+  paymentCents?: number;
+  unexpectedCents?: number;
+  unexpectedDate?: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -36,6 +71,8 @@ export interface Bill {
   amountCents: number;
   category: string;
   essential: boolean;
+  accountId?: string;
+  recurringDay?: number;
 }
 
 export interface Subscription {
@@ -45,7 +82,8 @@ export interface Subscription {
   cadence: "monthly" | "weekly" | "annual";
   lastChargeDate: string;
   nextChargeDate: string;
-  confidence: "Confirmed recurring" | "Likely recurring" | "Insufficient evidence";
+  confidence:
+    "Confirmed recurring" | "Likely recurring" | "Insufficient evidence";
   status: "essential" | "review" | "simulate-cancel" | "active";
 }
 

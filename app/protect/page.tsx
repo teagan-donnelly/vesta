@@ -1,89 +1,147 @@
-import { ArrowRight, CheckCircle2, ShieldAlert, Wallet } from "lucide-react";
+﻿"use client";
 import Link from "next/link";
 import { AegisShell } from "@/components/aegis-shell";
-import { subscriptions } from "@/lib/demo-data";
-import { detectRecurringCharges, formatCurrency } from "@/lib/financial-engine";
-
+import { useFinancial } from "@/components/financial-provider";
+import { ExplanationPanel } from "@/components/explanation-panel";
+import {
+  alertsFor,
+  classify,
+  formatCurrency,
+  subscriptionsFor,
+} from "@/lib/analysis";
 export default function ProtectPage() {
-  const recurring = detectRecurringCharges();
-
+  const { data, simulation, setSimulation } = useFinancial();
+  const subs = data ? subscriptionsFor(data) : [];
+  const alerts = data ? alertsFor(data) : [];
   return (
-    <AegisShell title="Protect" subtitle="Recurring charge intelligence and suspicious activity review.">
-      <div className="grid gap-6 xl:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-slate-700">
-            <Wallet className="h-5 w-5 text-sky-700" />
-            <h2 className="text-xl font-semibold">Recurring payments</h2>
-          </div>
-          <div className="mt-4 space-y-3">
-            {recurring.map((item) => (
-              <div key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium">{item.merchant}</p>
-                    <p className="mt-1 text-sm text-slate-600">{formatCurrency(item.amountCents)} • {item.cadence}</p>
-                  </div>
-                  <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-medium text-amber-700">{item.confidence}</span>
-                </div>
-                <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-                  <span>Last: {item.lastChargeDate}</span>
-                  <span>Next: {item.nextChargeDate}</span>
-                </div>
+    <AegisShell
+      title="Protect"
+      subtitle="Recurring charge intelligence and suspicious activity review."
+    >
+      {data && (
+        <>
+          <div className="grid gap-6 xl:grid-cols-2">
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="text-xl font-semibold">Subscriptions</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Rent, debt payments and recurring bills are separate
+                obligations. Select subscriptions to remove from simulated
+                future charges.
+              </p>
+              {!subs.length && (
+                <p className="mt-4">
+                  No supported subscription patterns found. More transaction
+                  history may be needed.
+                </p>
+              )}
+              <div className="mt-4 space-y-3">
+                {subs.map((s) => (
+                  <label
+                    key={s.id}
+                    className="block rounded-xl border border-slate-200 bg-slate-50 p-4"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={
+                        simulation.removedSubscriptions?.includes(s.id) || false
+                      }
+                      onChange={(e) => {
+                        const removed = simulation.removedSubscriptions || [];
+                        setSimulation({
+                          ...simulation,
+                          removedSubscriptions: e.target.checked
+                            ? [...removed, s.id]
+                            : removed.filter((k) => k !== s.id),
+                        });
+                      }}
+                    />{" "}
+                    <span className="font-medium">
+                      Simulate removing {s.merchant}
+                    </span>
+                    <p className="mt-2 text-sm">
+                      {formatCurrency(s.amountCents)} · {s.cadence} ·{" "}
+                      {s.confidence}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Last {s.lastChargeDate} · Next estimated{" "}
+                      {s.nextChargeDate}
+                    </p>
+                  </label>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-slate-700">
-            <ShieldAlert className="h-5 w-5 text-orange-500" />
-            <h2 className="text-xl font-semibold">Suspicious activity</h2>
-          </div>
-          <div className="mt-4 space-y-3">
-            {subscriptions.slice(0, 2).map((item) => (
-              <div key={item.id} className="rounded-xl border border-dashed border-orange-200 bg-orange-50 p-4">
-                <p className="font-medium text-orange-700">{item.merchant}</p>
-                <p className="mt-2 text-sm text-orange-800">The model flags this as a recurring expense with a moderate chance of being reviewed or canceled. This is not a claim of fraud or a cancellation action.</p>
+              <Link
+                className="mt-4 inline-block text-sky-700 underline"
+                href="/domino"
+              >
+                Compare selected removals in Domino
+              </Link>
+            </section>
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="text-xl font-semibold">Suspicious activity</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Flags invite review and do not establish fraud.
+              </p>
+              {!alerts.length && (
+                <p className="mt-4">
+                  No transactions meet the current review rules.
+                </p>
+              )}
+              <div className="mt-4 space-y-3">
+                {alerts.map((a) => (
+                  <article
+                    key={a.id}
+                    className="rounded-xl border border-orange-200 bg-orange-50 p-4"
+                  >
+                    <h3 className="font-medium">
+                      {a.title}: {a.merchant}
+                    </h3>
+                    <p className="mt-2">
+                      {formatCurrency(a.amountCents)} · {a.date}
+                    </p>
+                    <p className="mt-2 text-sm">{a.reason}</p>
+                    {a.evidence.map((e) => (
+                      <p key={e} className="mt-1 text-xs">
+                        {e}
+                      </p>
+                    ))}
+                  </article>
+                ))}
               </div>
-            ))}
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-              <CheckCircle2 className="mb-2 h-4 w-4" />
-              Demo review statuses are safe and local-only for this MVP. Nothing is auto-canceled externally.
+            </section>
+          </div>
+          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
+            <h2 className="text-xl font-semibold">
+              Transaction classifications
+            </h2>
+            <div className="mt-4 max-h-96 overflow-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr>
+                    <th className="p-2">Date</th>
+                    <th className="p-2">Merchant</th>
+                    <th className="p-2">Type</th>
+                    <th className="p-2">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.transactions.map((t) => (
+                    <tr key={t.id} className="border-t border-slate-100">
+                      <td className="p-2">{t.date}</td>
+                      <td className="p-2">
+                        {t.merchant}
+                        {t.pending ? " (pending)" : ""}
+                      </td>
+                      <td className="p-2">{classify(t)}</td>
+                      <td className="p-2">{formatCurrency(t.amountCents)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-xl font-semibold">Subscription review matrix</h3>
-          <Link href="/domino" className="inline-flex items-center gap-2 text-sm font-medium text-sky-700">
-            Sync to Domino <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-slate-600">
-                <th className="py-3 pr-4 font-medium">Merchant</th>
-                <th className="py-3 pr-4 font-medium">Typical</th>
-                <th className="py-3 pr-4 font-medium">Frequency</th>
-                <th className="py-3 pr-4 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {subscriptions.map((item) => (
-                <tr key={item.id} className="border-b border-slate-100">
-                  <td className="py-3 pr-4 font-medium">{item.merchant}</td>
-                  <td className="py-3 pr-4">{formatCurrency(item.amountCents)}</td>
-                  <td className="py-3 pr-4">{item.cadence}</td>
-                  <td className="py-3 pr-4">{item.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+          </section>
+          <ExplanationPanel />
+        </>
+      )}
     </AegisShell>
   );
 }

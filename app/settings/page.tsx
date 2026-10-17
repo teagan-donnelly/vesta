@@ -3,7 +3,10 @@ import { AegisShell } from "@/components/aegis-shell";
 
 export default function SettingsPage() {
   return (
-    <AegisShell title="Settings" subtitle="Data source, privacy posture, and guidance for operating in demo or live modes.">
+    <AegisShell
+      title="Settings"
+      subtitle="Data source, privacy posture, and guidance for operating in demo or live modes."
+    >
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-2">
@@ -11,9 +14,18 @@ export default function SettingsPage() {
             <h2 className="text-xl font-semibold">Data source</h2>
           </div>
           <ul className="mt-4 space-y-3 text-sm text-slate-600">
-            <li>Current mode: Synthetic demo data</li>
-            <li>Live sandbox: requires Nessie API key</li>
-            <li>Gemini: requires optional AI explanation key</li>
+            <li>
+              Use the Data source selector at the top of any page to switch
+              modes.
+            </li>
+            <li>
+              Demo Mode uses fictional records. Nessie Sandbox Mode loads
+              server-side records without synthetic fallback.
+            </li>
+            <li>
+              Gemini prioritizes verified explanations on Overview, Protect and
+              Domino; deterministic guidance is always available.
+            </li>
           </ul>
         </div>
 
@@ -25,7 +37,10 @@ export default function SettingsPage() {
           <ul className="mt-4 space-y-3 text-sm text-slate-600">
             <li>API keys stay server-side only.</li>
             <li>Client code never receives keys.</li>
-            <li>Emergency notes remain local or export-only.</li>
+            <li>
+              Simulations are kept in this browser session and never modify bank
+              records.
+            </li>
           </ul>
         </div>
 
@@ -35,7 +50,10 @@ export default function SettingsPage() {
             <h2 className="text-xl font-semibold">Educational disclaimer</h2>
           </div>
           <p className="mt-4 text-sm text-slate-600">
-            Aegis explains cash-flow risk and financial education using deterministic analysis and user-entered facts. It does not guarantee credit outcomes or account actions.
+            Vesta explains cash-flow risk and financial education using
+            deterministic analysis. Credit, Deadbolt and Continuity include
+            labeled fictional examples and do not infer credit history, shared
+            ownership or emergency contacts from Nessie.
           </p>
         </div>
       </div>

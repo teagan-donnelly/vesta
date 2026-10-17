@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx --test tests/*.test.ts",
+    "verify:integrations": "tsx scripts/verify-integrations.ts"
   },
   "dependencies": {
     "lucide-react": "^1.59.0",
