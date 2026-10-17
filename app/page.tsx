@@ -49,7 +49,7 @@ export default function HomePage() {
       title="Overview"
       subtitle="Balances, upcoming payments, and your 30-day cash outlook."
       actions={
-        <Link className="button button-secondary" href="/domino">
+        <Link className="button button-primary" href="/domino">
           Run a scenario <ArrowUpRight size={13} />
         </Link>
       }

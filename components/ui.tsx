@@ -111,13 +111,13 @@ export function LoadingState() {
     <div
       aria-busy="true"
       role="status"
-      aria-label="Loading financial information"
+      aria-label="Vesta is loading your financial information"
       className="loading-layout"
     >
       <div className="skeleton skeleton-metrics" />
       <div className="skeleton skeleton-chart" />
       <div className="skeleton skeleton-table" />
-      <span className="sr-only">Loading financial information</span>
+      <p className="loading-label">Vesta · Loading your financial overview</p>
     </div>
   );
 }

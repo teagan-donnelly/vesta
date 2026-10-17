@@ -14,9 +14,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Vesta | Financial Protection Intelligence",
+  title: "Vesta | Your money, in perspective",
+  applicationName: "Vesta",
   description:
-    "AI-powered financial protection and intelligence platform for cash-flow forecasting, recurring charges, and preparedness.",
+    "Understand your balances, review recurring charges, and explore your financial future with Vesta. Fictional demo and Nessie sandbox profiles.",
 };
 
 export default function RootLayout({

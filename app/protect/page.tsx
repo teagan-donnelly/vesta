@@ -41,7 +41,7 @@ export default function ProtectPage() {
       title="Protect"
       subtitle="Understand recurring costs. Review the activity that stands out."
       actions={
-        <Link href="/domino" className="button button-secondary">
+        <Link href="/domino" className="button button-primary">
           Open Domino <ArrowUpRight size={13} />
         </Link>
       }
