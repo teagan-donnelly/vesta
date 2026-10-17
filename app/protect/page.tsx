@@ -23,7 +23,8 @@ export default function ProtectPage() {
   if (!data)
     return (
       <AegisShell
-        title="Protect"
+        planSection="spending"
+        title="Plan Ahead"
         subtitle="Understand recurring costs. Review the activity that stands out."
       >
         <FinancialLoading />
@@ -38,11 +39,12 @@ export default function ProtectPage() {
   );
   return (
     <AegisShell
-      title="Protect"
+      planSection="spending"
+      title="Plan Ahead"
       subtitle="Understand recurring costs. Review the activity that stands out."
       actions={
-        <Link href="/domino" className="button button-primary">
-          Open Domino <ArrowUpRight size={13} />
+        <Link href="/plan?section=forecast" className="button button-primary">
+          See the effect in Forecast <ArrowUpRight size={13} />
         </Link>
       }
     >
@@ -115,7 +117,7 @@ export default function ProtectPage() {
                 <table className="data-table">
                   <caption className="sr-only">
                     Select recurring subscriptions to remove in a hypothetical
-                    Domino forecast
+                    your forecast
                   </caption>
                   <thead>
                     <tr>
@@ -185,7 +187,7 @@ export default function ProtectPage() {
                 )}{" "}
                 in forecast charges
               </span>
-              <Link href="/domino" className="text-link">
+              <Link href="/plan?section=forecast" className="text-link">
                 Compare in Domino <ArrowUpRight size={13} />
               </Link>
             </div>

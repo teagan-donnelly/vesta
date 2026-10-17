@@ -38,7 +38,7 @@ export function ForecastChart({
     <figure
       aria-label={
         scenarioPoints
-          ? "Baseline and simulation on a shared balance scale"
+          ? "Without changes and simulation on a shared balance scale"
           : "Projected cash balance"
       }
       style={{ margin: 0 }}
@@ -46,12 +46,12 @@ export function ForecastChart({
       <div className="chart-legend" style={{ padding: "0 20px 10px" }}>
         <span>
           <i className="legend-dot" />
-          Baseline
+          Without changes
         </span>
         {scenarioPoints && (
           <span>
             <i className="legend-dot scenario" />
-            Simulation
+            With your changes
           </span>
         )}
         {intervals.length > 0 && <span className="negative">Below zero</span>}
@@ -119,13 +119,13 @@ export function ForecastChart({
                     <strong>{dateLabel(String(label), true)}</strong>
                     {typeof base === "number" && (
                       <p>
-                        Baseline{" "}
+                        Without changes{" "}
                         <span className="amount">{formatCurrency(base)}</span>
                       </p>
                     )}
                     {typeof scenario === "number" && (
                       <p>
-                        Simulation{" "}
+                        With your changes{" "}
                         <span className="amount">
                           {formatCurrency(scenario)}
                         </span>
@@ -150,7 +150,7 @@ export function ForecastChart({
             />
             <Line
               dataKey="baseline"
-              name="Baseline"
+              name="Without changes"
               type="stepAfter"
               stroke="#24354d"
               strokeWidth={2}
@@ -161,7 +161,7 @@ export function ForecastChart({
             {scenarioPoints && (
               <Line
                 dataKey="scenario"
-                name="Simulation"
+                name="With your changes"
                 type="stepAfter"
                 stroke="#7d3548"
                 strokeWidth={2}

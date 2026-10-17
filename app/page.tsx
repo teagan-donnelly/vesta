@@ -10,6 +10,7 @@ import { Panel, Amount, Badge, EmptyState } from "@/components/ui";
 import { ActivityTable, dateLabel } from "@/components/activity-table";
 import { ForecastChart } from "@/components/forecast-chart";
 import { ExplanationPanel } from "@/components/explanation-panel";
+import { FinancialRisk } from "@/components/financial-risk";
 import { CollaborativeLink } from "@/components/collaborative-link";
 import {
   alertsFor,
@@ -28,8 +29,8 @@ export default function HomePage() {
   if (!data)
     return (
       <AegisShell
-        title="Overview"
-        subtitle="Balances, upcoming payments, and your 30-day cash outlook."
+        title="Home"
+        subtitle="See your money, upcoming payments, and possible financial risks."
       >
         <FinancialLoading />
       </AegisShell>
@@ -47,14 +48,15 @@ export default function HomePage() {
     .reduce((s, a) => s + a.balanceCents, 0);
   return (
     <AegisShell
-      title="Overview"
-      subtitle="Balances, upcoming payments, and your 30-day cash outlook."
+      title="Home"
+      subtitle="See your money, upcoming payments, and possible financial risks."
       actions={
-        <Link className="button button-primary" href="/domino">
-          Run a scenario <ArrowUpRight size={13} />
+        <Link className="button button-primary" href="/plan?section=forecast">
+          Plan ahead <ArrowUpRight size={13} />
         </Link>
       }
     >
+      <FinancialRisk />
       <CollaborativeLink />
       <section
         className="balance-overview"
@@ -110,7 +112,7 @@ export default function HomePage() {
               <Amount cents={forecast.lowestBalanceCents} />
             </strong>
           </div>
-          <Link href="/protect" className="subscription-summary">
+          <Link href="/plan?section=spending" className="subscription-summary">
             <span>
               {subscriptions.length} recurring services ·{" "}
               <Amount cents={monthlySubscriptionCost(subscriptions)} /> / month
@@ -124,8 +126,8 @@ export default function HomePage() {
           title="Cash outlook"
           description="Where your available cash could go over the next 30 days."
           action={
-            <Link href="/domino" className="text-link">
-              Explore Domino <ArrowUpRight size={13} />
+            <Link href="/plan?section=forecast" className="text-link">
+              Explore your forecast <ArrowUpRight size={13} />
             </Link>
           }
         >
@@ -137,7 +139,7 @@ export default function HomePage() {
               </strong>
             </div>
             <div>
-              <span className="mini-label">Projected shortfall</span>
+              <span className="mini-label">Possible shortfall</span>
               <strong
                 className={forecast.shortfallAmountCents ? "negative" : ""}
               >
@@ -201,7 +203,7 @@ export default function HomePage() {
           title="Recent activity"
           description="A closer look at the records behind your balance."
           action={
-            <Link href="/protect" className="text-link">
+            <Link href="/plan?section=spending" className="text-link">
               Review activity <ArrowUpRight size={13} />
             </Link>
           }
@@ -261,8 +263,8 @@ export default function HomePage() {
                     {formatCurrency(forecast.lowestBalanceCents)}. Compare
                     payment timing and subscription changes before this date.
                   </p>
-                  <Link href="/domino" className="text-link">
-                    Compare your options <ArrowRight size={12} />
+                  <Link href="/plan?section=forecast" className="text-link">
+                    Find a way to cover the shortfall <ArrowRight size={12} />
                   </Link>
                 </article>
               )}
@@ -274,7 +276,7 @@ export default function HomePage() {
                   </div>
                   <h3>{alert.merchant}</h3>
                   <p>{alert.reason}</p>
-                  <Link href="/protect" className="text-link">
+                  <Link href="/plan?section=spending" className="text-link">
                     Review this activity <ArrowRight size={12} />
                   </Link>
                 </article>
@@ -293,7 +295,16 @@ export default function HomePage() {
           </Panel>
         </div>
       </div>
-      <ExplanationPanel />
+      <div className="home-tools">
+        <Link href="/continuity">Emergency Planning</Link>
+        <Link href="/plan?section=spending">
+          Review spending & subscriptions
+        </Link>
+      </div>
+      <details className="secondary-details">
+        <summary>Understand this outlook</summary>
+        <ExplanationPanel />
+      </details>
     </AegisShell>
   );
 }

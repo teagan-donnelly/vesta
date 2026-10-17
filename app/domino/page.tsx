@@ -1,5 +1,6 @@
 ﻿"use client";
 import Link from "next/link";
+import { PlanFocus } from "@/components/financial-risk";
 import { CollaborativeLink } from "@/components/collaborative-link";
 import { useState } from "react";
 import { ArrowUpRight, RotateCcw } from "lucide-react";
@@ -29,7 +30,8 @@ export default function DominoPage() {
   if (!data)
     return (
       <AegisShell
-        title="Domino"
+        planSection="forecast"
+        title="Plan Ahead"
         subtitle="See the financial effect of a decision before you make it."
       >
         <FinancialLoading />
@@ -74,30 +76,32 @@ export default function DominoPage() {
     isIsoDate(date) && date > data.asOf && date <= baseline.endDate;
   return (
     <AegisShell
-      title="Domino"
+      planSection="forecast"
+      title="Plan Ahead"
       subtitle="See the financial effect of a decision before you make it."
       actions={
         <Button variant="secondary" onClick={() => setSimulation({})}>
           <RotateCcw size={13} />
-          Reset scenario
+          Reset changes
         </Button>
       }
     >
+      <PlanFocus />
       <CollaborativeLink publish />
       <MetricGrid
         items={[
           {
-            label: "Baseline ending balance",
+            label: "Without changes",
             value: <Amount cents={baseline.endingBalanceCents} />,
             note: dateLabel(baseline.endDate, true),
           },
           {
-            label: "Simulated ending balance",
+            label: "With your changes",
             value: <Amount cents={scenario.endingBalanceCents} />,
             note: "Your selected changes only",
           },
           {
-            label: "Change from baseline",
+            label: "Difference after your changes",
             value: <Amount cents={difference} signed />,
             note: changed.length
               ? `${changed.length} dates affected`
@@ -132,7 +136,7 @@ export default function DominoPage() {
                 </strong>
               </div>
               <div>
-                <span className="mini-label">Baseline low</span>
+                <span className="mini-label">Lowest without changes</span>
                 <strong
                   className={baseline.lowestBalanceCents < 0 ? "negative" : ""}
                 >
@@ -164,88 +168,94 @@ export default function DominoPage() {
                     : "These changes do not affect balances inside this forecast window."}
                 </>
               ) : (
-                "Choose a change in the simulation panel. Your baseline stays available for comparison, and no bank records are modified."
+                "Try a change in the panel. Your original outlook stays available, and no bank records are modified."
               )}
             </div>
           </Panel>
-          <Panel
-            title="Daily balance comparison"
-            description="The exact values behind both chart lines."
-            action={
-              <label className="check-row" style={{ margin: 0, fontSize: 12 }}>
-                <input
-                  type="checkbox"
-                  checked={onlyAffected}
-                  onChange={(e) => setOnlyAffected(e.target.checked)}
-                />
-                Affected dates only
-              </label>
-            }
-          >
-            <div className="table-wrap" style={{ maxHeight: 310 }}>
-              <table className="data-table">
-                <caption className="sr-only">
-                  Daily baseline and simulated cash balances in US dollars
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Date</th>
-                    <th scope="col" className="align-right">
-                      Baseline
-                    </th>
-                    <th scope="col" className="align-right">
-                      Simulation
-                    </th>
-                    <th scope="col" className="align-right">
-                      Difference
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.date}>
-                      <td>{dateLabel(row.date)}</td>
-                      <td className="align-right">
-                        <Amount cents={row.baseline} />
-                      </td>
-                      <td className="align-right">
-                        <Amount
-                          cents={row.scenario}
-                          className={row.scenario < 0 ? "negative" : ""}
-                        />
-                      </td>
-                      <td className="align-right">
-                        <Amount cents={row.difference} signed />
-                      </td>
-                    </tr>
-                  ))}
-                  {!rows.length && (
+          <details className="secondary-details">
+            <summary>Daily balance details</summary>
+            <Panel
+              title="Daily balance comparison"
+              description="The exact values behind both chart lines."
+              action={
+                <label
+                  className="check-row"
+                  style={{ margin: 0, fontSize: 12 }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={onlyAffected}
+                    onChange={(e) => setOnlyAffected(e.target.checked)}
+                  />
+                  Affected dates only
+                </label>
+              }
+            >
+              <div className="table-wrap" style={{ maxHeight: 310 }}>
+                <table className="data-table">
+                  <caption className="sr-only">
+                    Daily baseline and simulated cash balances in US dollars
+                  </caption>
+                  <thead>
                     <tr>
-                      <td
-                        colSpan={4}
-                        style={{
-                          textAlign: "center",
-                          padding: 28,
-                          color: "#5f6f85",
-                        }}
-                      >
-                        No dates differ from the baseline.
-                      </td>
+                      <th scope="col">Date</th>
+                      <th scope="col" className="align-right">
+                        Without changes
+                      </th>
+                      <th scope="col" className="align-right">
+                        With your changes
+                      </th>
+                      <th scope="col" className="align-right">
+                        Difference
+                      </th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Panel>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <tr key={row.date}>
+                        <td>{dateLabel(row.date)}</td>
+                        <td className="align-right">
+                          <Amount cents={row.baseline} />
+                        </td>
+                        <td className="align-right">
+                          <Amount
+                            cents={row.scenario}
+                            className={row.scenario < 0 ? "negative" : ""}
+                          />
+                        </td>
+                        <td className="align-right">
+                          <Amount cents={row.difference} signed />
+                        </td>
+                      </tr>
+                    ))}
+                    {!rows.length && (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          style={{
+                            textAlign: "center",
+                            padding: 28,
+                            color: "#5f6f85",
+                          }}
+                        >
+                          Your changes do not affect any dates yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
+          </details>
         </div>
         <Panel
-          title="Build a scenario"
+          title="Try a change"
           description="Hypothetical changes. No account actions."
           className="scenario-panel"
         >
           <div className="panel-body">
             <div className="control-group">
-              <h3>Remove subscriptions</h3>
+              <h3>Cancel a subscription (what-if)</h3>
               {subs.length ? (
                 subs.map((s) => (
                   <label key={s.id} className="check-row">
@@ -274,12 +284,14 @@ export default function DominoPage() {
                   No repeated subscription activity is available yet.
                 </p>
               )}
-              <Link href="/protect" className="text-link">
-                Review in Protect <ArrowUpRight size={12} />
+              <Link href="/plan?section=spending" className="text-link">
+                Review spending & subscriptions <ArrowUpRight size={12} />
               </Link>
             </div>
-            <div className="control-group">
-              <h3>Change payment or income timing</h3>
+            <details className="control-group">
+              <summary>
+                Delay an expense, receive income later, or change a payment
+              </summary>
               <label className="field">
                 <span>Scheduled event</span>
                 <select
@@ -371,9 +383,9 @@ export default function DominoPage() {
                 acting on an expense delay. An event moved past this window is
                 excluded from its ending balance.
               </p>
-            </div>
-            <div className="control-group">
-              <h3>Add an unexpected expense</h3>
+            </details>
+            <details className="control-group">
+              <summary>Add an unexpected expense</summary>
               <label className="field">
                 <span>Amount ($)</span>
                 <input
@@ -413,7 +425,7 @@ export default function DominoPage() {
                   </small>
                 )}
               </label>
-            </div>
+            </details>
             <p
               className="subtext"
               style={{ fontSize: 12, marginTop: 16, lineHeight: 1.8 }}
@@ -425,7 +437,10 @@ export default function DominoPage() {
           </div>
         </Panel>
       </div>
-      <ExplanationPanel scenario />
+      <details className="secondary-details section-gap">
+        <summary>Why did my outlook change?</summary>
+        <ExplanationPanel scenario />
+      </details>
     </AegisShell>
   );
 }

@@ -1,5 +1,5 @@
-"use client";
-import { useState } from "react";
+﻿"use client";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AegisShell } from "@/components/aegis-shell";
 import {
@@ -7,15 +7,17 @@ import {
   DemoGate,
   useDemoPlanning,
 } from "@/components/demo-planning";
-import { Badge, Button, LoadingState, Notice, Panel } from "@/components/ui";
+import { Button, LoadingState, Notice, Panel } from "@/components/ui";
+import { PlanningRecovery } from "@/components/planning-recovery";
 import { useFinancial } from "@/components/financial-provider";
+import { useAssistantLanguage } from "@/lib/assistant-language";
 import type { assistant } from "@/lib/collaboration/assistant";
 type Reply = Awaited<ReturnType<typeof assistant>>;
 export default function AssistantPage() {
   return (
     <AegisShell
       title="Ask Vesta"
-      subtitle="Understand the risk. Explore an adjustment. Decide what to share."
+      subtitle="Ask questions and explore options based on your financial outlook."
     >
       <DemoGate>
         {(profile) => <Conversation key={profile} profile={profile} />}
@@ -26,10 +28,22 @@ export default function AssistantPage() {
 function Conversation({ profile }: { profile: string }) {
   const { data, error, busy, change } = useDemoPlanning(profile);
   const { setSimulation } = useFinancial();
-  const [language, setLanguage] = useState("en");
+  const [language, setLanguage] = useAssistantLanguage();
   const [reply, setReply] = useState<Reply | null>(null);
   const [question, setQuestion] = useState("");
+  const [applied, setApplied] = useState(false);
+  const bottom = useRef<HTMLDivElement>(null);
+  const settings = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    bottom.current?.scrollIntoView({ block: "nearest", behavior: "auto" });
+  }, [data?.own.messages.length, busy]);
+  const ready = Boolean(data);
+  useEffect(() => {
+    if (window.location.hash === "#preferences" && settings.current)
+      settings.current.open = true;
+  }, [ready]);
   async function ask(value: string) {
+    setApplied(false);
     const result = await change({ action: "chat", question: value, language });
     if (result) {
       setReply(result.assistant);
@@ -37,202 +51,268 @@ function Conversation({ profile }: { profile: string }) {
     }
   }
   if (!data)
-    return error ? <Notice tone="risk">{error}</Notice> : <LoadingState />;
+    return error ? (
+      <>
+        <Notice tone="risk">
+          Your conversation is unavailable. Review your planning connection.
+        </Notice>
+        <PlanningRecovery />
+      </>
+    ) : (
+      <LoadingState />
+    );
+  const spanish = language === "es";
   return (
-    <>
+    <div className="chat-workspace">
       <DemoDisclosure storage={data.storage} />
       {error && <Notice tone="risk">{error}</Notice>}
-      <div className="assistant-layout">
-        <Panel
-          title={`${profile[0].toUpperCase() + profile.slice(1)}’s private conversation`}
-          description="Provider interprets intent; Vesta calculates every financial result. Only your own fictional context is used."
-          action={<Badge>{reply?.source || "Ready"}</Badge>}
+      <Panel
+        className="chat-panel"
+        title="Your conversation"
+        description="Understand your options. You decide what happens."
+        action={
+          <label className="chat-language">
+            <span className="sr-only">Conversation language</span>
+            <select
+              aria-label="Conversation language"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+            >
+              <option value="en">English</option>
+              <option value="es">Español</option>
+            </select>
+          </label>
+        }
+      >
+        <div
+          className="conversation"
+          role="log"
+          aria-label="Your private conversation with Vesta"
+          aria-live="polite"
         >
-          <div
-            className="conversation"
-            role="log"
-            aria-label="Your assistant conversation"
-            aria-live="polite"
-          >
-            {data.own.messages.length ? (
-              data.own.messages.map((m, i) => (
-                <article key={i} className={`conversation-message ${m.role}`}>
-                  <strong>{m.role === "user" ? "You" : "Vesta"}</strong>
-                  <p>{m.content}</p>
-                </article>
-              ))
-            ) : (
-              <p className="muted">
-                Ask about your rent readiness or explore a hypothetical
-                adjustment. Pregunta en español si prefieres.
+          {data.own.messages.length ? (
+            data.own.messages.map((m, i) => (
+              <article className={`conversation-message ${m.role}`} key={i}>
+                <strong>
+                  {m.role === "user" ? (spanish ? "Tú" : "You") : "Vesta"}
+                </strong>
+                <p>{m.content}</p>
+              </article>
+            ))
+          ) : (
+            <article className="conversation-message assistant">
+              <strong>Vesta</strong>
+              <p>
+                {spanish
+                  ? "Puedo ayudarte a revisar el alquiler, explorar cambios y decidir qué compartir. ¿Por dónde empezamos?"
+                  : "I can help you understand upcoming payments, explore changes, and decide what to share. What would you like to work on?"}
               </p>
-            )}
-          </div>
-          {reply?.proposal && (
-            <div className="scenario-proposal">
-              <strong>Proposed simulation · {reply.proposal.label}</strong>
-              <p>No cancellation, payment, or disclosure will happen.</p>
-              <Button
-                disabled={busy}
-                onClick={async () => {
-                  const result = await change({
-                    action: "scenario",
-                    simulation: reply.proposal!.simulation,
-                  });
-                  if (result) {
-                    setSimulation(reply.proposal!.simulation);
-                    setReply({ ...reply, proposal: null });
-                  }
-                }}
-              >
-                Confirm hypothetical scenario
-              </Button>
-              <Link href="/domino" className="text-link">
-                Inspect in Domino →
-              </Link>
+            </article>
+          )}
+          {busy && (
+            <div className="chat-thinking" role="status">
+              {spanish ? "Vesta está pensando…" : "Vesta is thinking…"}
             </div>
           )}
+          <div ref={bottom} />
+        </div>
+        {reply?.proposal && (
+          <div className="scenario-proposal">
+            <strong>
+              {spanish ? "Un cambio para explorar" : "A change to explore"}:{" "}
+              {reply.proposal.label}
+            </strong>
+            <p>
+              {spanish
+                ? "Solo cambia tu plan. No cancela un servicio ni mueve dinero."
+                : "This changes your plan only. It does not cancel a service or move money."}
+            </p>
+            <Button
+              disabled={busy}
+              onClick={async () => {
+                const result = await change({
+                  action: "scenario",
+                  simulation: reply.proposal!.simulation,
+                });
+                if (result) {
+                  setSimulation(reply.proposal!.simulation);
+                  setReply({ ...reply, proposal: null });
+                  setApplied(true);
+                }
+              }}
+            >
+              {spanish
+                ? "Confirmar el cambio hipotético"
+                : "Confirm this what-if change"}
+            </Button>
+            <Link href="/plan?section=forecast" className="text-link">
+              {spanish ? "Ver el pronóstico" : "See it in Forecast"} →
+            </Link>
+          </div>
+        )}
+        {applied && (
+          <div className="chat-saved" role="status">
+            {spanish
+              ? "Tu plan se actualizó."
+              : "Your what-if plan is updated."}{" "}
+            <Link href="/shared">
+              {spanish
+                ? "Ver tus gastos compartidos"
+                : "See the effect on shared expenses"}{" "}
+              →
+            </Link>
+          </div>
+        )}
+        <div className="assistant-prompts" aria-label="Suggested questions">
+          {(spanish
+            ? [
+                "¿Puedo cubrir mi alquiler?",
+                "Quiero mantener el gimnasio; ¿qué opciones tengo?",
+                "¿Qué pasa si cancelo Spotify?",
+                "¿Cómo afecta esto a mi compañero?",
+              ]
+            : [
+                "Can I afford my rent?",
+                "I want to keep my gym membership.",
+                "What happens if I cancel Spotify?",
+                "How would this affect my roommate?",
+              ]
+          ).map((prompt) => (
+            <button disabled={busy} onClick={() => ask(prompt)} key={prompt}>
+              {prompt}
+            </button>
+          ))}
+        </div>
+        <form
+          className="chat-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            await ask(question);
+          }}
+        >
+          <label className="field">
+            <span className="sr-only">
+              {spanish ? "Tu pregunta" : "Your question"}
+            </span>
+            <textarea
+              required
+              maxLength={1000}
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder={
+                spanish ? "Pregunta a Vesta…" : "Ask Vesta about your finances…"
+              }
+              onKeyDown={(e) => {
+                if (
+                  e.key === "Enter" &&
+                  !e.shiftKey &&
+                  !e.nativeEvent.isComposing
+                ) {
+                  e.preventDefault();
+                  if (question.trim() && !busy)
+                    e.currentTarget.form?.requestSubmit();
+                }
+              }}
+            />
+          </label>
+          <Button
+            aria-label={spanish ? "Enviar pregunta" : "Send question"}
+            disabled={busy || !question.trim()}
+          >
+            {spanish ? "Enviar" : "Send"} →
+          </Button>
+          <p className="chat-input-note">
+            {spanish
+              ? "Solo datos ficticios. Los pronósticos son estimaciones."
+              : "Fictional information only. Forecasts are estimates."}
+          </p>
+        </form>
+      </Panel>
+      <details
+        ref={settings}
+        className="secondary-details assistant-settings"
+        id="preferences"
+      >
+        <summary>Memory & assistant settings</summary>
+        <Panel
+          title="What would you like Vesta to remember?"
+          description="Memory is optional and private to this demo profile."
+        >
           <form
-            className="chat-form"
+            className="panel-body"
+            key={JSON.stringify(data.own.preferences)}
             onSubmit={async (e) => {
               e.preventDefault();
-              await ask(question);
+              const f = new FormData(e.currentTarget);
+              await change({
+                action: "memory",
+                enabled: true,
+                preferences: String(f.get("preferences"))
+                  .split("\n")
+                  .map((p) => p.trim())
+                  .filter(Boolean),
+              });
             }}
           >
             <label className="field">
-              <span>Language / Idioma</span>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-              >
-                <option value="en">English</option>
-                <option value="es">Español</option>
-              </select>
-            </label>
-            <label className="field">
-              <span>Your question · fictional information only</span>
+              <span>Your preferences · one per line</span>
               <textarea
-                required
-                maxLength={1000}
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder={
-                  language === "es"
-                    ? "¿Qué pasa si cancelo Spotify?"
-                    : "What happens if I cancel Spotify?"
-                }
+                name="preferences"
+                maxLength={3000}
+                defaultValue={data.own.preferences.join("\n")}
+                placeholder="My gym membership is non-negotiable."
               />
             </label>
-            <div className="inline-actions">
-              <Button disabled={busy || !question.trim()}>
-                {busy ? "Working…" : "Ask Vesta"}
-              </Button>
-              <Button
-                variant="quiet"
-                disabled={busy}
-                onClick={() => change({ action: "clearConversation" })}
-              >
-                Clear this conversation
-              </Button>
-            </div>
+            <p className="subtext section-gap">
+              {data.own.memoryOptIn ? "Memory is on" : "Memory is off"}.{" "}
+              {data.backboardConfigured
+                ? "Saving sends these preferences to Backboard for this profile only."
+                : "Backboard is unavailable in this environment. Saved preferences use the labeled planning store."}
+            </p>
+            <Button disabled={busy} className="section-gap">
+              Confirm and remember these preferences
+            </Button>
           </form>
-          <div className="assistant-prompts">
-            {(language === "es"
-              ? [
-                  "Explica mi riesgo de alquiler",
-                  "Quiero mantener el gimnasio; ¿qué opciones tengo?",
-                  "¿Qué pasa si cancelo Spotify?",
-                  "¿Qué información comparto?",
-                ]
-              : [
-                  "Explain my rent risk",
-                  "I want to keep my gym; what are my options?",
-                  "What happens if I cancel Spotify?",
-                  "What information do I share?",
-                ]
-            ).map((prompt) => (
-              <button key={prompt} disabled={busy} onClick={() => ask(prompt)}>
-                {prompt}
-              </button>
-            ))}
-          </div>
-          <p className="guidance-source">
-            {reply?.reason || "No provider has been called yet."} Responses use
-            bounded bilingual templates to prevent invented figures. This
-            prototype does not provide unrestricted financial advice.
-          </p>
-        </Panel>
-        <div className="section-stack">
-          <Panel
-            title="Your remembered preferences"
-            description="Opt-in only. Never visible to another demo profile."
-          >
-            <form
-              className="panel-body"
-              key={JSON.stringify(data.own.preferences)}
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const f = new FormData(e.currentTarget);
-                await change({
-                  action: "memory",
-                  enabled: true,
-                  preferences: String(f.get("preferences"))
-                    .split("\n")
-                    .map((p) => p.trim())
-                    .filter(Boolean),
-                });
+          <div className="panel-body inline-actions">
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() =>
+                change({ action: "memory", enabled: false, preferences: [] })
+              }
+            >
+              Clear memory and turn off
+            </Button>
+            <Button
+              variant="quiet"
+              disabled={busy}
+              onClick={async () => {
+                if (await change({ action: "clearConversation" })) {
+                  setReply(null);
+                  setApplied(false);
+                }
               }}
             >
-              <label className="field">
-                <span>One preference per line · up to ten</span>
-                <textarea
-                  name="preferences"
-                  maxLength={3000}
-                  defaultValue={data.own.preferences.join("\n")}
-                  placeholder="My gym membership is non-negotiable."
-                />
-              </label>
-              <p className="subtext section-gap">
-                {data.own.memoryOptIn ? "Memory enabled" : "Memory is off"} ·{" "}
-                {data.backboardConfigured
-                  ? "Saving sends only these explicit preferences to Backboard; provider memory is isolated per profile."
-                  : "Backboard is not configured. Preferences stay in the clearly labeled local demo adapter."}
-              </p>
-              <Button className="section-gap" disabled={busy}>
-                Confirm opt-in / correct preferences
-              </Button>
-            </form>
-            <div className="panel-body">
-              <Button
-                variant="secondary"
-                disabled={busy}
-                onClick={() =>
-                  change({ action: "memory", enabled: false, preferences: [] })
-                }
-              >
-                Clear memories and turn off
-              </Button>
-              <p className="subtext section-gap">
-                Clearing deletes this profile’s dedicated Backboard assistant
-                when connected, including its threads and memories. If the
-                provider is unavailable, Vesta reports failure instead of
-                claiming deletion.
-              </p>
-            </div>
-          </Panel>
-          <Notice>
-            <p>
-              Only your explicit preferences and questions are sent to the AI
-              provider. Bank histories, balances, and other participants’
-              records are excluded. Gemini remains available for the existing
-              personal explanations.
-            </p>
-          </Notice>
-          <Link href="/shared" className="text-link">
-            Review shared readiness and disclosures →
-          </Link>
-        </div>
-      </div>
-    </>
+              Clear conversation
+            </Button>
+          </div>
+        </Panel>
+        <details className="secondary-details">
+          <summary>How this answer was prepared</summary>
+          <p>{reply?.reason || "No provider has handled a question yet."}</p>
+          <p>
+            Last response: {reply?.source || "none"}. Vesta calculates the
+            financial figures. Gemini or Backboard interprets the question when
+            available; provider failures use clearly attributed planning rules.
+          </p>
+          <p>
+            Only your questions and opted-in preferences go to the provider. No
+            bank history, other members’ information, or credentials are sent.
+            Clearing memory deletes the dedicated Backboard assistant when
+            connected; a failed deletion is reported.
+          </p>
+        </details>
+      </details>
+    </div>
   );
 }

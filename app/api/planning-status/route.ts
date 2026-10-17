@@ -1,13 +1,16 @@
-export async function GET() {
+import { localPlanning, storageSource } from "@/lib/collaboration/store";
+export async function GET(request: Request) {
+  const local = localPlanning(request);
   return Response.json(
     {
       backboardConfigured: Boolean(process.env.BACKBOARD_API_KEY),
       tigerConfigured: Boolean(process.env.TIGER_DATABASE_URL),
-      storage: process.env.TIGER_DATABASE_URL
-        ? "Tiger Data PostgreSQL (connection verified by a successful planning request)"
-        : process.env.VERCEL
-          ? "Ephemeral local fictional demo adapter"
-          : "Local fictional demo adapter",
+      activeStorage: storageSource(local),
+      storage: storageSource(local),
+      connectionState:
+        process.env.TIGER_DATABASE_URL && !local
+          ? "Configured; this status response does not verify database connectivity."
+          : "Local fictional planning selected.",
       identity: "Fictional profile switching only; no real authentication",
     },
     { headers: { "Cache-Control": "no-store" } },

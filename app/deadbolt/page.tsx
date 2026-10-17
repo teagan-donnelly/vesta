@@ -23,7 +23,7 @@ export default function DeadboltPage() {
   if (!data)
     return (
       <AegisShell
-        title="Deadbolt"
+        title="Financial Separation"
         subtitle="A practical plan for financial independence during a life transition."
       >
         <FinancialLoading />
@@ -31,10 +31,10 @@ export default function DeadboltPage() {
     );
   return (
     <AegisShell
-      title="Deadbolt"
+      title="Financial Separation"
       subtitle="A practical plan for financial independence during a life transition."
       actions={
-        <Link className="button button-secondary" href="/domino">
+        <Link className="button button-secondary" href="/plan?section=forecast">
           Plan your next budget <ArrowUpRight size={13} />
         </Link>
       }

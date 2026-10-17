@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useFinancial } from "./financial-provider";
-import { Button, EmptyState, Notice } from "./ui";
+import { Button, EmptyState } from "./ui";
 import type { payload } from "@/app/api/collaboration/route";
 import { ensureDemoSession } from "@/lib/demo-session-client";
 export type PlanningPayload = ReturnType<typeof payload>;
@@ -87,15 +87,13 @@ export function useDemoPlanning(profile: string) {
 }
 export function DemoDisclosure({ storage }: { storage?: string }) {
   return (
-    <Notice>
+    <details className="compact-disclosure">
+      <summary>Demo data · privacy & storage</summary>
       <p>
-        <strong>
-          Fictional multiuser demonstration · not secure authentication.
-        </strong>{" "}
-        Profiles are isolated planning perspectives in this browser’s demo
-        session. No funds are held, reserved, transferred, or verified as paid.{" "}
-        {storage && <span>Storage: {storage}.</span>}
+        All profiles and activity are fictional. Switching profiles is not
+        authentication. Forecasts and members’ updates do not hold, reserve,
+        transfer, or confirm money. Storage: {storage || "checking"}.
       </p>
-    </Notice>
+    </details>
   );
 }

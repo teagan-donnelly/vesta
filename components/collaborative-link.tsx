@@ -1,13 +1,16 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
+import { useState } from "react";
 import { useFinancial } from "./financial-provider";
-import { Button, Notice } from "./ui";
+import { Button } from "./ui";
+import { SharedReturnLink } from "./financial-risk";
 export function CollaborativeLink({ publish = false }: { publish?: boolean }) {
   const { mode, customer, simulation, reload } = useFinancial();
-  const [state, setState] = useState("");
+  const [status, setStatus] = useState("");
+  const [saving, setSaving] = useState(false);
   if (mode !== "demo" || !customer.startsWith("demo:")) return null;
   async function apply() {
-    setState("Saving…");
+    setSaving(true);
     try {
       const r = await fetch(`/api/collaboration?profile=${customer.slice(5)}`, {
         method: "POST",
@@ -19,30 +22,40 @@ export function CollaborativeLink({ publish = false }: { publish?: boolean }) {
         }),
       });
       if (!r.ok) throw Error();
-      setState(
-        "Hypothetical plan saved. Shared readiness reflects only authorized disclosures.",
+      setStatus(
+        "Your what-if plan is saved. Your actual finances and the original outlook are unchanged.",
       );
       reload(true);
     } catch {
-      setState("Plan could not be saved.");
+      setStatus(
+        "Your change could not be saved. Check planning storage in Settings.",
+      );
+    } finally {
+      setSaving(false);
     }
   }
-  return (
-    <Notice>
-      <div>
-        <strong>Personal decisions, shared commitments</strong>
-        <p>
-          Your assigned contributions are already included once in this
-          forecast.{" "}
-          <Link href="/shared">Review shared readiness and privacy</Link> ·{" "}
-          <Link href="/assistant">Ask Vesta</Link>
-        </p>
-        {state && <p role="status">{state}</p>}
+  if (!publish)
+    return (
+      <div className="connected-links">
+        <Link href="/shared">
+          See how your outlook affects shared expenses →
+        </Link>
       </div>
-      {publish && (
-        <Button onClick={apply}>Confirm scenario for shared planning</Button>
-      )}
-    </Notice>
+    );
+  return (
+    <section className="save-plan">
+      <div>
+        <strong>See what this means for your shared expenses</strong>
+        <p>
+          Save your what-if changes to update your shared outlook. Only
+          information you agreed to share is visible to others.
+        </p>
+        {status && <p role="status">{status}</p>}
+      </div>
+      <Button disabled={saving} onClick={apply}>
+        {saving ? "Saving…" : "Confirm and update my plan"}
+      </Button>
+      <SharedReturnLink />
+    </section>
   );
 }
-import { useState } from "react";

@@ -10,9 +10,12 @@ export default function SettingsPage() {
       title="Settings"
       subtitle="Manage your data source, privacy, and financial workspace."
     >
-      <DataSettings />
       <PlanningSettings />
-      {setupAvailable && <LocalSandboxSetup />}
+      <details className="secondary-details section-gap" id="diagnostics">
+        <summary>Financial data, connections & developer diagnostics</summary>
+        <DataSettings />
+        {setupAvailable && <LocalSandboxSetup />}
+      </details>
     </AegisShell>
   );
 }

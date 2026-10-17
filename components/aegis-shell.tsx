@@ -5,11 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ChartNoAxesCombined,
-  CreditCard,
   ShieldCheck,
-  ShieldPlus,
   WalletCards,
-  Settings2,
   Files,
   Menu,
   X,
@@ -17,33 +14,30 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { DataStatus, useFinancial } from "./financial-provider";
-import { Badge, Button } from "./ui";
-import { DemoControls } from "./demo-controls";
-const navItems = [
-  { href: "/", label: "Overview", icon: WalletCards },
-  { href: "/protect", label: "Protect", icon: ShieldCheck },
-  { href: "/domino", label: "Domino", icon: ChartNoAxesCombined },
-  { href: "/credit", label: "Credit", icon: CreditCard },
-  { href: "/deadbolt", label: "Deadbolt", icon: ShieldPlus },
-  { href: "/continuity", label: "Continuity", icon: Files },
-  { href: "/settings", label: "Settings", icon: Settings2 },
-  { href: "/shared", label: "Shared planning", icon: Files },
-  { href: "/assistant", label: "Ask Vesta", icon: ShieldCheck },
-];
+import { Button } from "./ui";
+import { ProfileMenu } from "./profile-menu";
+import { PlanNavigation } from "./plan-navigation";
+import { mainDestinations, destinationFor, sectionFor } from "@/lib/navigation";
+const icons = [WalletCards, Files, ChartNoAxesCombined, ShieldCheck];
+const navItems = mainDestinations.map((item, i) => ({
+  ...item,
+  icon: icons[i],
+}));
 export function AegisShell({
   title,
   subtitle,
   children,
   actions,
+  planSection,
 }: {
   title: string;
   subtitle: string;
   children: ReactNode;
   actions?: ReactNode;
+  planSection?: string;
 }) {
   const pathname = usePathname();
-  const { mode, setMode, data, customer, setCustomer, loading, reload } =
-    useFinancial();
+  const { mode, data, customer, loading, reload } = useFinancial();
   const [mobileOpen, setMobileOpen] = useState(false);
   const menuTrigger = useRef<HTMLButtonElement>(null);
   const closeControl = useRef<HTMLButtonElement>(null);
@@ -59,7 +53,23 @@ export function AegisShell({
     data?.customers.find((c) => c.id === customer) ||
     data?.customers.find((c) => c.id === data.accounts[0]?.customerId) ||
     data?.customers[0];
-  const name = profile?.name || "Your workspace";
+  const name =
+    mode === "demo" && customer.startsWith("demo:")
+      ? customer.slice(5, 6).toUpperCase() + customer.slice(6)
+      : profile?.name || "Your profile";
+  const destination = destinationFor(pathname);
+  const displayTitle =
+    pathname === "/"
+      ? "Home"
+      : destination?.href === "/plan"
+        ? "Plan Ahead"
+        : pathname === "/shared"
+          ? "Shared Finances"
+          : pathname === "/deadbolt"
+            ? "Financial Separation"
+            : pathname === "/continuity"
+              ? "Emergency Planning"
+              : title;
   function closeMenu() {
     setMobileOpen(false);
     requestAnimationFrame(() => menuTrigger.current?.focus());
@@ -104,7 +114,7 @@ export function AegisShell({
         <div className="brand">
           <Link
             href="/"
-            aria-label="Vesta overview"
+            aria-label="Vesta Home"
             onClick={() => setMobileOpen(false)}
           >
             <Image
@@ -132,8 +142,8 @@ export function AegisShell({
             <Link
               key={href}
               href={href}
-              className={`nav-item ${pathname === href ? "active" : ""}`}
-              aria-current={pathname === href ? "page" : undefined}
+              className={`nav-item ${destination?.href === href ? "active" : ""}`}
+              aria-current={destination?.href === href ? "page" : undefined}
               onClick={() => setMobileOpen(false)}
             >
               <Icon size={17} strokeWidth={1.7} aria-hidden="true" />
@@ -173,32 +183,21 @@ export function AegisShell({
             </button>
             <span>Workspace</span>
             <ChevronRight size={13} aria-hidden="true" />
-            <strong>{title}</strong>
+            <strong>{displayTitle}</strong>
           </div>
           <div className="workspace-controls">
-            {mode === "nessie" && !!data?.customers.length && (
-              <select
-                aria-label="Financial profile"
-                className="compact-select profile-select"
-                value={customer || profile?.id || ""}
-                onChange={(e) => setCustomer(e.target.value)}
-              >
-                {data.customers.map((c) => (
-                  <option value={c.id} key={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            )}
-            <select
-              aria-label="Data source"
-              className="compact-select"
-              value={mode}
-              onChange={(e) => setMode(e.target.value as "demo" | "nessie")}
-            >
-              <option value="demo">Demo Mode</option>
-              <option value="nessie">Nessie Sandbox</option>
-            </select>
+            <details className="source-disclosure">
+              <summary className="source-indicator">
+                {mode === "nessie" ? "Nessie sandbox" : "Demo data"}
+              </summary>
+              <p>
+                {mode === "nessie"
+                  ? "These fictional banking records are retrieved from Nessie. Missing history is never replaced with demo transactions."
+                  : "These balances and activities are fictional. Demo profile switching is not authentication."}{" "}
+                <Link href="/settings">Data & privacy settings</Link>
+              </p>
+            </details>
+            <ProfileMenu name={name} />
             <Button
               variant="quiet"
               title="Refresh financial information"
@@ -211,39 +210,25 @@ export function AegisShell({
           </div>
         </header>
         <main id="main-content" className="page-content" tabIndex={-1}>
-          <DemoControls />
           <header className="page-heading">
             <div>
               <div className="eyebrow">
-                {pathname === "/shared"
+                {destination?.href === "/shared"
                   ? "SHARED PLANNING"
                   : pathname === "/assistant"
                     ? "PERSONAL GUIDANCE"
                     : "PERSONAL FINANCE"}
               </div>
-              <h1>{title}</h1>
+              <h1>{displayTitle}</h1>
               <p>{subtitle}</p>
             </div>
-            <div className="page-actions">
-              {actions}
-              <span
-                title={
-                  mode === "nessie"
-                    ? "Financial records retrieved from the Nessie banking sandbox. The Vesta test profile contains fictional activity."
-                    : "All balances and activity in Demo Mode are fictional."
-                }
-              >
-                <Badge>
-                  {mode === "nessie" ? "Sandbox data" : "Fictional demo"}
-                </Badge>
-                <span className="sr-only">
-                  {mode === "nessie"
-                    ? "Nessie sandbox records are fictional, not real bank activity."
-                    : "All demonstration records are fictional."}
-                </span>
-              </span>
-            </div>
+            <div className="page-actions">{actions}</div>
           </header>
+          {destination?.href === "/plan" && (
+            <PlanNavigation
+              section={planSection || sectionFor(pathname, null)}
+            />
+          )}
           <DataStatus />
           {children}
           <footer className="workspace-footer">

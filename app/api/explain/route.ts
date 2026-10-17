@@ -4,7 +4,11 @@ import { explain } from "@/lib/explanations";
 import type { Simulation } from "@/lib/types";
 import { isIsoDate } from "@/lib/analysis";
 import { personalData, profileId } from "@/lib/collaboration/model";
-import { demoSession, withDemo } from "@/lib/collaboration/store";
+import {
+  demoSession,
+  localPlanning,
+  withDemo,
+} from "@/lib/collaboration/store";
 export async function POST(request: Request) {
   if (request.headers.get("origin") !== new URL(request.url).origin)
     return Response.json(
@@ -21,8 +25,11 @@ export async function POST(request: Request) {
             typeof body.customer === "string" ? body.customer : undefined,
           )
         : typeof body.customer === "string" && body.customer.startsWith("demo:")
-          ? await withDemo(demoSession(request).id, (s) =>
-              personalData(s, profileId(body.customer.slice(5))),
+          ? await withDemo(
+              demoSession(request).id,
+              (s) => personalData(s, profileId(body.customer.slice(5))),
+              false,
+              localPlanning(request),
             )
           : demoData();
     const raw = body.simulation || {};

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Pool, type PoolClient } from "pg";
 import { initialState, type DemoState } from "./model";
+import { databaseConfig } from "./database-config";
 
 const globalStore = globalThis as typeof globalThis & {
   vestaPool?: Pool;
@@ -13,14 +14,21 @@ export function pool() {
   if (!process.env.TIGER_DATABASE_URL)
     throw new Error("Tiger Data is not configured.");
   return (globalStore.vestaPool ||= new Pool({
-    connectionString: process.env.TIGER_DATABASE_URL,
+    ...databaseConfig(
+      process.env.TIGER_DATABASE_URL,
+      process.env.TIGER_DATABASE_CA,
+    ),
     max: 4,
     connectionTimeoutMillis: 7000,
     statement_timeout: 10000,
   }));
 }
-export const storageSource = () =>
-  process.env.TIGER_DATABASE_URL
+export const localPlanning = (request: Request) =>
+  /(?:^|;\s*)vesta-demo-store=local(?:;|$)/.test(
+    request.headers.get("cookie") || "",
+  );
+export const storageSource = (forceLocal = false) =>
+  process.env.TIGER_DATABASE_URL && !forceLocal
     ? "Tiger Data PostgreSQL"
     : process.env.VERCEL
       ? "Ephemeral local fictional demo adapter"
@@ -160,6 +168,7 @@ export async function withDemo<T>(
   id: string,
   action: (state: DemoState) => Promise<T> | T,
   write = false,
+  forceLocal = false,
 ): Promise<T> {
   if (!/^[a-f0-9-]{36}$/.test(id)) throw new Error("Invalid demo session.");
   const locks = (globalStore.vestaLocks ||= new Map());
@@ -167,7 +176,7 @@ export async function withDemo<T>(
   const task = prior
     .catch(() => {})
     .then(async () => {
-      if (process.env.TIGER_DATABASE_URL) {
+      if (process.env.TIGER_DATABASE_URL && !forceLocal) {
         const client = await pool().connect();
         try {
           await client.query("BEGIN");

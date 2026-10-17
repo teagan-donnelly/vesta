@@ -3,6 +3,7 @@ import { loadNessie } from "@/lib/nessie";
 import { personalData, profileId } from "@/lib/collaboration/model";
 import {
   demoSession,
+  localPlanning,
   sessionHeaders,
   withDemo,
 } from "@/lib/collaboration/store";
@@ -15,10 +16,15 @@ export async function GET(request: Request) {
     if (mode === "demo" && params.get("customer")?.startsWith("demo:")) {
       const viewer = profileId(params.get("customer")!.slice(5));
       const session = demoSession(request);
-      const data = await withDemo(session.id, (s) => ({
-        ...personalData(s, viewer),
-        planningSimulation: s.plans[viewer].simulation,
-      }));
+      const data = await withDemo(
+        session.id,
+        (s) => ({
+          ...personalData(s, viewer),
+          planningSimulation: s.plans[viewer].simulation,
+        }),
+        false,
+        localPlanning(request),
+      );
       return Response.json(data, { headers: sessionHeaders(request, session) });
     }
     return Response.json(

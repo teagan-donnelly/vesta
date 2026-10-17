@@ -2,11 +2,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Panel } from "./ui";
+import { PlanningRecovery } from "./planning-recovery";
 export function PlanningSettings() {
   const [status, setStatus] = useState<{
     backboardConfigured: boolean;
     tigerConfigured: boolean;
     storage: string;
+    activeStorage: string;
   } | null>(null);
   useEffect(() => {
     const c = new AbortController();
@@ -40,9 +42,11 @@ export function PlanningSettings() {
             : "Checking configuration…"}
         </p>
         <p className="subtext section-gap">
-          {status?.storage}. Each browser demo session is separate. Database and
-          memory service credentials are server-side only.
+          Selected planning store: {status?.activeStorage || status?.storage}.
+          Each browser demo session is separate. Database and memory service
+          credentials are server-side only.
         </p>
+        <PlanningRecovery offerDatabase />
         <div className="inline-actions section-gap">
           <Link href="/shared">Manage workspaces and disclosure consent</Link>
           <Link href="/assistant">

@@ -4,6 +4,8 @@ Privacy-first financial intelligence, personal cash-flow forecasting, and collab
 
 ## Collaborative hackathon demonstration
 
+The current navigation is **Home · Shared Finances · Plan Ahead · Ask Vesta**. Forecast, Spending & Subscriptions, and Credit Guidance are sections inside Plan Ahead; Financial Separation, Emergency Planning, and Settings remain accessible as secondary tools. All original URLs continue working. See the [updated UX walkthrough, live integration findings, TLS setup, and manual smoke checklist](docs/ux-demo.md).
+
 Start at **http://localhost:3000/shared** and choose **Explore as Kevin**. The [complete two-minute demonstration, setup, privacy architecture, database migration, credentials, and prototype limitations](docs/collaborative-demo.md) are documented together. Shared planning uses fictional Ava/Kevin/Maya profiles and server-side selective disclosure, reuses Domino, and includes a bounded English/Spanish assistant with optional Backboard memory. This switcher is not authentication and never maps to Nessie customers.
 
 New optional server variables are `BACKBOARD_API_KEY` and `TIGER_DATABASE_URL`. Without them, the app labels its local fictional planning adapter and local opted-in preferences. With Tiger Data configured, run `npm.cmd run db:migrate`; use `npm.cmd run verify:planning` for actual connectivity checks. `npm.cmd run demo:smoke` exercises the complete flow against a running localhost app. Do not claim provider connections solely from configuration.

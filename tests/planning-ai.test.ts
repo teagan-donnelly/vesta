@@ -22,7 +22,7 @@ test("Backboard uses separate assistants, explicit memory CRUD, read-only recall
       return Response.json({ assistant_id: `assistant-${++sequence}` });
     if (url.endsWith("/memories") && (!init?.method || init.method === "GET"))
       return Response.json({
-        memories: [{ memory_id: "old-preference", content: "Old preference" }],
+        memories: [{ id: "old-preference", content: "Old preference" }],
       });
     if (url.endsWith("/threads/messages"))
       return Response.json({

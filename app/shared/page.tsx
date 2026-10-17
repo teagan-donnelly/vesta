@@ -2,6 +2,9 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { SharedExpenseSummary } from "@/components/shared-expense-summary";
+import { PlanningRecovery } from "@/components/planning-recovery";
+import { readinessLabel } from "@/lib/navigation";
 import { AegisShell } from "@/components/aegis-shell";
 import {
   DemoDisclosure,
@@ -25,8 +28,8 @@ const dollars = (v: FormDataEntryValue | null) => Math.round(Number(v) * 100);
 export default function SharedPage() {
   return (
     <AegisShell
-      title="Shared planning"
-      subtitle="Financial accountability without financial surveillance."
+      title="Shared Finances"
+      subtitle="Plan expenses together without sharing your entire financial life."
     >
       <Suspense fallback={<LoadingState />}>
         <DemoGate>
@@ -43,9 +46,22 @@ function Shared({ profile }: { profile: string }) {
   const [edit, setEdit] = useState<SharedCommitment | null>(null);
   const [creating, setCreating] = useState(false);
   if (!data)
-    return error ? <Notice tone="risk">{error}</Notice> : <LoadingState />;
+    return error ? (
+      <div>
+        <Notice tone="risk">
+          Shared finances are unavailable. Check your planning connection in
+          Settings.
+        </Notice>
+        <PlanningRecovery />
+      </div>
+    ) : (
+      <LoadingState />
+    );
   const workspace =
     data.workspaces.find((w) => w.id === search.get("workspace")) ||
+    data.workspaces.find((w) =>
+      w.commitments.some((c) => c.id === search.get("commitment")),
+    ) ||
     data.workspaces[0];
   return (
     <>
@@ -72,7 +88,7 @@ function Shared({ profile }: { profile: string }) {
           </select>
         </label>
         <Link href="/assistant" className="button button-primary">
-          Explore solutions with Vesta
+          Ask about our expenses
         </Link>
       </div>
       {workspace ? (
@@ -89,52 +105,50 @@ function Shared({ profile }: { profile: string }) {
                   setEdit(null);
                 }}
               >
-                Propose commitment
+                Add a shared expense
               </Button>
             }
           >
-            <div className="panel-body">
-              <p className="subtext">
-                Expected contributions are planning assignments. Reported
-                amounts are member statements, not confirmed payments. Forecast
-                coverage is an estimate.
-              </p>
-            </div>
-            {workspace.owner === profile && (
-              <form
-                className="member-form"
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  const f = new FormData(e.currentTarget);
-                  await change({
-                    action: "member",
-                    workspaceId: workspace.id,
-                    member: f.get("member"),
-                  });
-                }}
-              >
-                <label className="field">
-                  <span>Add fictional participant</span>
-                  <select name="member" required>
-                    {data.profiles
-                      .filter((p) => !workspace.members.includes(p.id as "ava"))
-                      .map((p) => (
-                        <option value={p.id} key={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <Button
-                  variant="secondary"
-                  disabled={
-                    busy || workspace.members.length === data.profiles.length
-                  }
+            <details className="secondary-details workspace-people">
+              <summary>People & workspace details</summary>
+              {workspace.owner === profile && (
+                <form
+                  className="member-form"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const f = new FormData(e.currentTarget);
+                    await change({
+                      action: "member",
+                      workspaceId: workspace.id,
+                      member: f.get("member"),
+                    });
+                  }}
                 >
-                  Confirm add demo participant
-                </Button>
-              </form>
-            )}
+                  <label className="field">
+                    <span>Add fictional participant</span>
+                    <select name="member" required>
+                      {data.profiles
+                        .filter(
+                          (p) => !workspace.members.includes(p.id as "ava"),
+                        )
+                        .map((p) => (
+                          <option value={p.id} key={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <Button
+                    variant="secondary"
+                    disabled={
+                      busy || workspace.members.length === data.profiles.length
+                    }
+                  >
+                    Confirm add demo participant
+                  </Button>
+                </form>
+              )}
+            </details>
           </Panel>
           <div className="section-gap section-stack">
             {workspace.commitments.length ? (
@@ -157,209 +171,220 @@ function Shared({ profile }: { profile: string }) {
                     </Badge>
                   }
                 >
-                  <div className="commitment-totals">
-                    <div>
-                      <span>Total obligation</span>
-                      <strong>
-                        <Amount cents={c.amountCents} />
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Reported by members</span>
-                      <strong>
-                        <Amount cents={c.reportedCents} />
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Projected coverage</span>
-                      <strong>
-                        {c.projectedCents === null ? (
-                          "Not fully shared"
-                        ) : (
-                          <Amount cents={c.projectedCents} />
-                        )}
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Potential shortfall</span>
-                      <strong>
-                        {c.shortfallCents === null ? (
-                          "Private / unknown"
-                        ) : (
-                          <Amount cents={c.shortfallCents} />
-                        )}
-                      </strong>
-                    </div>
-                  </div>
-                  <div className="planning-progress">
-                    <label>
-                      Member-reported commitments · not collected funds
-                      <progress value={c.reportedCents} max={c.amountCents} />
-                    </label>
-                    {c.projectedCents !== null && (
-                      <label>
-                        Baseline projected coverage · not guaranteed
-                        <progress
-                          value={c.projectedCents}
-                          max={c.amountCents}
-                        />
-                      </label>
-                    )}
-                  </div>
-                  <div className="table-wrap">
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>Participant</th>
-                          <th>Expected contribution</th>
-                          <th>Reported amount</th>
-                          <th>Baseline readiness</th>
-                          <th>Hypothetical plan</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {c.contributions.map((a) => (
-                          <tr key={a.profile}>
-                            <td>
-                              {a.name}
-                              {a.profile === profile ? " (you)" : ""}
-                            </td>
-                            <td>
-                              <Amount cents={a.expectedCents} />
-                              <span className="subtext">
-                                {a.agreed
-                                  ? "Agreed contribution"
-                                  : "Proposed assignment"}
-                              </span>
-                              {a.profile === profile && !a.agreed && (
-                                <Button
-                                  variant="quiet"
-                                  disabled={busy}
-                                  onClick={() =>
-                                    change({ action: "agree", id: c.id })
-                                  }
-                                >
-                                  Confirm agreement
-                                </Button>
-                              )}
-                            </td>
-                            <td>
-                              <Amount cents={a.reportedCents} />
-                            </td>
-                            <td>
-                              {a.status}
-                              {a.coveredCents !== undefined &&
-                                a.coveredCents !== null && (
-                                  <span className="subtext">
-                                    <Amount cents={a.coveredCents} /> projected
-                                  </span>
-                                )}
-                            </td>
-                            <td>
-                              {a.scenarioStatus}
-                              {a.scenarioCoveredCents !== undefined &&
-                                a.scenarioCoveredCents !== null && (
-                                  <span className="subtext">
-                                    <Amount cents={a.scenarioCoveredCents} />{" "}
-                                    projected
-                                  </span>
-                                )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="panel-body section-gap">
-                    <Link className="text-link" href="/domino">
-                      Review your contribution in Domino →
-                    </Link>
-                    {c.contributions
-                      .filter(
-                        (a) =>
-                          a.disclosedBalanceCents !== undefined ||
-                          a.disclosedExpenses.length,
-                      )
-                      .map((a) => (
-                        <p className="subtext" key={a.profile}>
-                          Explicitly disclosed by {a.name}:{" "}
-                          {a.disclosedBalanceCents !== undefined && (
-                            <>
-                              balance <Amount cents={a.disclosedBalanceCents} />{" "}
-                              ·{" "}
-                            </>
+                  <SharedExpenseSummary
+                    expense={c}
+                    viewer={profile}
+                    workspace={workspace.id}
+                  />
+                  <details className="secondary-details expense-details">
+                    <summary>Contributions & payment details</summary>
+                    <div className="commitment-totals">
+                      <div>
+                        <span>Total obligation</span>
+                        <strong>
+                          <Amount cents={c.amountCents} />
+                        </strong>
+                      </div>
+                      <div>
+                        <span>Members say they’ve set aside</span>
+                        <strong>
+                          <Amount cents={c.reportedCents} />
+                        </strong>
+                      </div>
+                      <div>
+                        <span>Estimated amount available</span>
+                        <strong>
+                          {c.projectedCents === null ? (
+                            "Not fully shared"
+                          ) : (
+                            <Amount cents={c.projectedCents} />
                           )}
-                          {a.disclosedExpenses.map((t) => (
-                            <span key={t.id}>
-                              {t.date} {t.merchant}{" "}
-                              <Amount cents={t.amountCents} /> ·{" "}
-                            </span>
-                          ))}
-                        </p>
-                      ))}
-                    {c.contributions.some((a) => a.profile === profile) && (
-                      <form
-                        className="report-form"
-                        onSubmit={async (e) => {
-                          e.preventDefault();
-                          const f = new FormData(e.currentTarget);
-                          await change({
-                            action: "report",
-                            id: c.id,
-                            amountCents: dollars(f.get("amount")),
-                          });
-                        }}
-                      >
-                        <label className="field">
-                          <span>Your reportedly committed amount ($)</span>
-                          <input
-                            name="amount"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            max={
-                              c.contributions.find(
-                                (a) => a.profile === profile,
-                              )!.expectedCents / 100
-                            }
-                            required
+                        </strong>
+                      </div>
+                      <div>
+                        <span>Potential shortfall</span>
+                        <strong>
+                          {c.shortfallCents === null ? (
+                            "Private / unknown"
+                          ) : (
+                            <Amount cents={c.shortfallCents} />
+                          )}
+                        </strong>
+                      </div>
+                    </div>
+                    <div className="planning-progress">
+                      <label>
+                        Member-reported commitments · not collected funds
+                        <progress value={c.reportedCents} max={c.amountCents} />
+                      </label>
+                      {c.projectedCents !== null && (
+                        <label>
+                          Estimated amount available without changes · not
+                          guaranteed
+                          <progress
+                            value={c.projectedCents}
+                            max={c.amountCents}
                           />
                         </label>
-                        <Button variant="secondary" disabled={busy}>
-                          Confirm report · no payment
-                        </Button>
-                      </form>
-                    )}
-                    {c.owner === profile && (
-                      <div className="inline-actions section-gap">
-                        <Button
-                          variant="quiet"
-                          onClick={() => {
-                            setEdit(c);
-                            setCreating(false);
+                      )}
+                    </div>
+                    <div className="table-wrap">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Participant</th>
+                            <th>Expected contribution</th>
+                            <th>Reported amount</th>
+                            <th>Can they cover their share?</th>
+                            <th>With their changes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {c.contributions.map((a) => (
+                            <tr key={a.profile}>
+                              <td>
+                                {a.name}
+                                {a.profile === profile ? " (you)" : ""}
+                              </td>
+                              <td>
+                                <Amount cents={a.expectedCents} />
+                                <span className="subtext">
+                                  {a.agreed
+                                    ? "Agreed contribution"
+                                    : "Proposed assignment"}
+                                </span>
+                                {a.profile === profile && !a.agreed && (
+                                  <Button
+                                    variant="quiet"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      change({ action: "agree", id: c.id })
+                                    }
+                                  >
+                                    Confirm agreement
+                                  </Button>
+                                )}
+                              </td>
+                              <td>
+                                <Amount cents={a.reportedCents} />
+                              </td>
+                              <td>
+                                {readinessLabel(a.status, a.name)}
+                                {a.coveredCents !== undefined &&
+                                  a.coveredCents !== null && (
+                                    <span className="subtext">
+                                      <Amount cents={a.coveredCents} />{" "}
+                                      projected
+                                    </span>
+                                  )}
+                              </td>
+                              <td>
+                                {readinessLabel(a.scenarioStatus, a.name)}
+                                {a.scenarioCoveredCents !== undefined &&
+                                  a.scenarioCoveredCents !== null && (
+                                    <span className="subtext">
+                                      <Amount cents={a.scenarioCoveredCents} />{" "}
+                                      projected
+                                    </span>
+                                  )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="panel-body section-gap">
+                      <Link className="text-link" href="/plan?section=forecast">
+                        Explore your share in Forecast →
+                      </Link>
+                      {c.contributions
+                        .filter(
+                          (a) =>
+                            a.disclosedBalanceCents !== undefined ||
+                            a.disclosedExpenses.length,
+                        )
+                        .map((a) => (
+                          <p className="subtext" key={a.profile}>
+                            Explicitly disclosed by {a.name}:{" "}
+                            {a.disclosedBalanceCents !== undefined && (
+                              <>
+                                balance{" "}
+                                <Amount cents={a.disclosedBalanceCents} />{" "}
+                                ·{" "}
+                              </>
+                            )}
+                            {a.disclosedExpenses.map((t) => (
+                              <span key={t.id}>
+                                {t.date} {t.merchant}{" "}
+                                <Amount cents={t.amountCents} /> ·{" "}
+                              </span>
+                            ))}
+                          </p>
+                        ))}
+                      {c.contributions.some((a) => a.profile === profile) && (
+                        <form
+                          className="report-form"
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            const f = new FormData(e.currentTarget);
+                            await change({
+                              action: "report",
+                              id: c.id,
+                              amountCents: dollars(f.get("amount")),
+                            });
                           }}
                         >
-                          Edit your proposal
-                        </Button>
-                        <Button
-                          variant="quiet"
-                          onClick={async () => {
-                            if (
-                              window.confirm(
-                                "Remove your proposed commitment from planning? No payment or bank record changes.",
+                          <label className="field">
+                            <span>Amount you say you’ve set aside ($)</span>
+                            <input
+                              name="amount"
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              max={
+                                c.contributions.find(
+                                  (a) => a.profile === profile,
+                                )!.expectedCents / 100
+                              }
+                              required
+                            />
+                          </label>
+                          <Button variant="secondary" disabled={busy}>
+                            Save my update · no payment
+                          </Button>
+                        </form>
+                      )}
+                      {c.owner === profile && (
+                        <div className="inline-actions section-gap">
+                          <Button
+                            variant="quiet"
+                            onClick={() => {
+                              setEdit(c);
+                              setCreating(false);
+                            }}
+                          >
+                            Edit your proposal
+                          </Button>
+                          <Button
+                            variant="quiet"
+                            onClick={async () => {
+                              if (
+                                window.confirm(
+                                  "Remove your proposed commitment from planning? No payment or bank record changes.",
+                                )
                               )
-                            )
-                              await change({
-                                action: "removeCommitment",
-                                id: c.id,
-                              });
-                          }}
-                        >
-                          Remove your proposal
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                                await change({
+                                  action: "removeCommitment",
+                                  id: c.id,
+                                });
+                            }}
+                          >
+                            Remove your proposal
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </details>
                 </Panel>
               ))
             ) : (
@@ -383,49 +408,59 @@ function Shared({ profile }: { profile: string }) {
               }}
             />
           )}
-          <Privacy
-            key={`${workspace.id}:${JSON.stringify(workspace.ownConsent)}`}
-            consent={workspace.ownConsent}
-            expenses={data.expenses}
-            busy={busy}
-            save={(consent) =>
-              change({ action: "consent", workspaceId: workspace.id, consent })
-            }
-          />
+          <details className="secondary-details section-gap" id="sharing">
+            <summary>Privacy & sharing · choose what others can see</summary>
+            <Privacy
+              key={`${workspace.id}:${JSON.stringify(workspace.ownConsent)}`}
+              consent={workspace.ownConsent}
+              expenses={data.expenses}
+              busy={busy}
+              save={(consent) =>
+                change({
+                  action: "consent",
+                  workspaceId: workspace.id,
+                  consent,
+                })
+              }
+            />
+          </details>
           {workspace.history.length > 0 && (
-            <Panel
-              className="section-gap"
-              title="Your readiness planning history"
-              description="Time-stamped hypothetical evaluations. Only your own history is visible."
-            >
-              <div className="table-wrap">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Evaluated</th>
-                      <th>Commitment</th>
-                      <th>Hypothetical readiness</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {workspace.history
-                      .slice()
-                      .reverse()
-                      .map((h, i) => (
-                        <tr key={i}>
-                          <td>{new Date(h.at).toLocaleString()}</td>
-                          <td>
-                            {workspace.commitments.find(
-                              (c) => c.id === h.commitmentId,
-                            )?.name || "Previous commitment"}
-                          </td>
-                          <td>{h.status}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </Panel>
+            <details className="secondary-details section-gap">
+              <summary>Your past estimates</summary>
+              <Panel
+                className="section-gap"
+                title="Your past estimates"
+                description="Time-stamped hypothetical evaluations. Only your own history is visible."
+              >
+                <div className="table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Evaluated</th>
+                        <th>Commitment</th>
+                        <th>Outlook with your changes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {workspace.history
+                        .slice()
+                        .reverse()
+                        .map((h, i) => (
+                          <tr key={i}>
+                            <td>{new Date(h.at).toLocaleString()}</td>
+                            <td>
+                              {workspace.commitments.find(
+                                (c) => c.id === h.commitmentId,
+                              )?.name || "Previous commitment"}
+                            </td>
+                            <td>{h.status}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Panel>
+            </details>
           )}
         </>
       ) : (
@@ -434,51 +469,57 @@ function Shared({ profile }: { profile: string }) {
           description="Create one below, or ask a fictional workspace owner to add this demo participant."
         />
       )}
-      <Panel
-        className="section-gap"
-        title="Create a shared workspace"
-        description="A separate fictional planning group. No accounts are merged."
+      <details
+        className="secondary-details section-gap"
+        open={!workspace || search.get("workspace") === "new"}
       >
-        <form
-          className="panel-body form-grid"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const form = e.currentTarget;
-            const f = new FormData(form);
-            const result = await change({
-              action: "workspace",
-              name: f.get("name"),
-              kind: f.get("kind"),
-            });
-            if (result) {
-              router.push(
-                `/shared?workspace=${encodeURIComponent(result.workspaces.at(-1).id)}`,
-              );
-              form.reset();
-            }
-          }}
+        <summary>Create another shared workspace</summary>
+        <Panel
+          className="section-gap"
+          title="Create a shared workspace"
+          description="A separate fictional planning group. No accounts are merged."
         >
-          <label className="field">
-            <span>Name</span>
-            <input name="name" required maxLength={100} />
-          </label>
-          <label className="field">
-            <span>Group type</span>
-            <select name="kind">
-              {["Household", "Couple", "Family", "Business", "Custom"].map(
-                (k) => (
-                  <option key={k}>{k}</option>
-                ),
-              )}
-            </select>
-          </label>
-          <Button disabled={busy}>Confirm create workspace</Button>
-        </form>
-      </Panel>
+          <form
+            className="panel-body form-grid"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.currentTarget;
+              const f = new FormData(form);
+              const result = await change({
+                action: "workspace",
+                name: f.get("name"),
+                kind: f.get("kind"),
+              });
+              if (result) {
+                router.push(
+                  `/shared?workspace=${encodeURIComponent(result.workspaces.at(-1).id)}`,
+                );
+                form.reset();
+              }
+            }}
+          >
+            <label className="field">
+              <span>Name</span>
+              <input name="name" required maxLength={100} />
+            </label>
+            <label className="field">
+              <span>Group type</span>
+              <select name="kind">
+                {["Household", "Couple", "Family", "Business", "Custom"].map(
+                  (k) => (
+                    <option key={k}>{k}</option>
+                  ),
+                )}
+              </select>
+            </label>
+            <Button disabled={busy}>Confirm create workspace</Button>
+          </form>
+        </Panel>
+      </details>
       <p className="subtext section-gap">
         Considering a financial separation?{" "}
         <Link className="text-link" href="/deadbolt">
-          Review shared connections in Deadbolt
+          Financial Separation tools
         </Link>
         . No memberships or obligations change automatically.
       </p>
@@ -610,7 +651,7 @@ function Privacy({
   return (
     <Panel
       className="section-gap"
-      title="Your disclosure choices"
+      title="Your sharing choices"
       description="Applies only to you in this workspace. New members share no personal financial details by default."
     >
       <form
@@ -622,12 +663,9 @@ function Privacy({
       >
         {(
           [
-            ["readiness", "Contribution readiness only"],
-            [
-              "coverage",
-              "Exact projected coverage amounts (enables group totals when everyone agrees)",
-            ],
-            ["balance", "Current account balance"],
+            ["readiness", "Share whether I can cover my part"],
+            ["coverage", "Share the estimated amount available for my share"],
+            ["balance", "Share my account balance"],
           ] as const
         ).map(([k, label]) => (
           <label className="check-row" key={k}>
@@ -664,7 +702,7 @@ function Privacy({
           </div>
         </details>
         <div className="inline-actions section-gap">
-          <Button disabled={busy}>Confirm disclosure choices</Button>
+          <Button disabled={busy}>Save sharing choices</Button>
           <Button
             variant="secondary"
             disabled={busy}
@@ -678,7 +716,7 @@ function Privacy({
               if (await save(cleared)) setValue(cleared);
             }}
           >
-            Revoke all disclosures
+            Stop sharing everything
           </Button>
         </div>
         <p className="subtext section-gap">

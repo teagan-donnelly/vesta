@@ -1,6 +1,7 @@
 import { formatCurrency, project, subscriptionsFor } from "../analysis";
 import {
   coverage,
+  consentFor,
   personalData,
   type DemoState,
   type ProfileId,
@@ -13,6 +14,7 @@ const intents = [
   "privacy",
   "education",
   "clarify",
+  "shared",
 ] as const;
 type Intent = (typeof intents)[number];
 const validIntent = (v: unknown): v is Intent => intents.includes(v as Intent);
@@ -129,6 +131,17 @@ export async function assistant(
     options.find((sub) =>
       question.toLowerCase().includes(sub.merchant.toLowerCase()),
     ) || options.find((sub) => !/fitness/i.test(sub.merchant));
+  if (
+    /roommate|household|shared expense|compañer|gasto compartido/i.test(
+      question,
+    )
+  )
+    intent = "shared";
+  if (
+    /gym|fitness|gimnasio/i.test(question) &&
+    /keep|non.negotiable|mantener|conservar/i.test(question)
+  )
+    intent = "options";
   // Resolve explicit named what-if requests deterministically even if the intent
   // model overweights the prior conversation. This only creates a proposal.
   if (
@@ -144,7 +157,19 @@ export async function assistant(
     afterCents: number;
   } | null = null;
   let reply = "";
-  if (intent === "simulate" && requested) {
+  if (intent === "shared") {
+    const commitment = myCommitments[0];
+    const own = commitment?.contributions.find((a) => a.profile === profile);
+    const estimate = commitment
+      ? coverage(s, profile, true).get(`${commitment.id}:${commitment.dueDate}`)
+      : undefined;
+    const sharing = commitment
+      ? consentFor(s, commitment.workspaceId, profile).readiness
+      : false;
+    reply = spanish
+      ? `${own ? `Tu parte de ${formatCurrency(own.expectedCents)} para ${commitment.name} ${estimate?.status === "appears achievable" ? "parece alcanzable" : "puede estar en riesgo"} con tu plan guardado.` : "Primero añade un gasto compartido."} ${sharing ? "Los demás ven solo la información que elegiste compartir." : "Tu pronóstico es privado; puedes elegir compartir si puedes cubrir tu parte."} No es un pago ni una garantía.`
+      : `${own ? `Your ${formatCurrency(own.expectedCents)} share of ${commitment.name} ${estimate?.status === "appears achievable" ? "looks achievable" : "may be at risk"} under your saved what-if plan.` : "Add a shared expense first."} ${sharing ? "Other members see only the information you chose to share." : "Your outlook is private; you can choose to share whether you can cover your part."} This is not a payment or a guarantee.`;
+  } else if (intent === "simulate" && requested) {
     const simulation = {
       ...plan.simulation,
       removedSubscriptions: [

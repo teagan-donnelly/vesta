@@ -27,9 +27,13 @@ async function main() {
       console.log(
         "Tiger Data: database read, Timescale extension, and planning schema verified.",
       );
-    } catch {
+    } catch (error) {
+      const code = (error as { code?: string }).code;
       console.log(
-        "Tiger Data: verification failed. Check connectivity and run db:migrate. No URL logged.",
+        code === "SELF_SIGNED_CERT_IN_CHAIN" ||
+          code === "UNABLE_TO_VERIFY_LEAF_SIGNATURE"
+          ? "Tiger Data: certificate chain is not trusted. Supply the provider CA in TIGER_DATABASE_CA; verification remains enabled."
+          : "Tiger Data: verification failed. Check connectivity and run db:migrate. No URL logged.",
       );
       process.exitCode = 1;
     } finally {

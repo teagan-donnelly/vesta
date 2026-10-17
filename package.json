@@ -13,7 +13,8 @@
     "inspect:sandbox": "tsx scripts/inspect-sandbox.ts",
     "db:migrate": "tsx scripts/migrate-planning.ts",
     "verify:planning": "tsx scripts/verify-planning.ts",
-    "demo:smoke": "tsx scripts/demo-smoke.ts"
+    "demo:smoke": "tsx scripts/demo-smoke.ts",
+    "verify:memory": "tsx scripts/verify-memory.ts"
   },
   "dependencies": {
     "lucide-react": "^1.59.0",

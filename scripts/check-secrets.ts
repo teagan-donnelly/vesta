@@ -8,6 +8,7 @@ const keys = [
   "GEMINI_API_KEY",
   "BACKBOARD_API_KEY",
   "TIGER_DATABASE_URL",
+  "TIGER_DATABASE_CA",
 ]
   .map((k) => process.env[k])
   .filter((v): v is string => Boolean(v));

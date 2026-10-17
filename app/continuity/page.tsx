@@ -26,7 +26,7 @@ export default function ContinuityPage() {
   if (!data)
     return (
       <AegisShell
-        title="Continuity"
+        title="Emergency Planning"
         subtitle="Keep essential financial obligations clear when life is interrupted."
       >
         <FinancialLoading />
@@ -60,7 +60,7 @@ export default function ContinuityPage() {
   }
   return (
     <AegisShell
-      title="Continuity"
+      title="Emergency Planning"
       subtitle="Keep essential financial obligations clear when life is interrupted."
       actions={
         <Button variant="secondary" onClick={exportPlan}>

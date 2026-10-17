@@ -15,6 +15,7 @@ import {
 } from "@/lib/collaboration/model";
 import {
   demoSession,
+  localPlanning,
   sessionHeaders,
   storageSource,
   withDemo,
@@ -42,13 +43,13 @@ function cents(value: unknown) {
     throw new Error("Use a valid nonnegative amount in integer cents.");
   return Number(value);
 }
-export function payload(s: DemoState, viewer: ProfileId) {
+export function payload(s: DemoState, viewer: ProfileId, forceLocal = false) {
   const plan = s.plans[viewer];
   return {
     profile: viewer,
     profiles,
     asOf: s.asOf,
-    storage: storageSource(),
+    storage: storageSource(forceLocal),
     backboardConfigured: Boolean(process.env.BACKBOARD_API_KEY),
     workspaces: s.workspaces
       .filter((w) => w.members.includes(viewer))
@@ -71,18 +72,23 @@ export function payload(s: DemoState, viewer: ProfileId) {
 }
 export async function GET(request: Request) {
   const session = demoSession(request);
+  const forceLocal = localPlanning(request);
   const params = new URL(request.url).searchParams;
   try {
     const viewer = profileId(params.get("profile") || "kevin");
-    const result = await withDemo(session.id, (s) =>
-      params.get("list") === "1"
-        ? {
-            workspaces: s.workspaces
-              .filter((w) => w.members.includes(viewer))
-              .map((w) => ({ id: w.id, name: w.name })),
-            storage: storageSource(),
-          }
-        : payload(s, viewer),
+    const result = await withDemo(
+      session.id,
+      (s) =>
+        params.get("list") === "1"
+          ? {
+              workspaces: s.workspaces
+                .filter((w) => w.members.includes(viewer))
+                .map((w) => ({ id: w.id, name: w.name })),
+              storage: storageSource(forceLocal),
+            }
+          : payload(s, viewer, forceLocal),
+      false,
+      forceLocal,
     );
     return Response.json(result, { headers: sessionHeaders(request, session) });
   } catch {
@@ -102,6 +108,7 @@ export async function POST(request: Request) {
       { status: 403 },
     );
   const session = demoSession(request);
+  const forceLocal = localPlanning(request);
   try {
     if (Number(request.headers.get("content-length") || 0) > 20000)
       return Response.json({ error: "Request too large." }, { status: 413 });
@@ -302,11 +309,12 @@ export async function POST(request: Request) {
             body.language === "es" ? "es" : "en",
             `${session.id}-${viewer}`,
           );
-          return { ...payload(s, viewer), assistant: response };
+          return { ...payload(s, viewer, forceLocal), assistant: response };
         } else throw new Error("Unknown planning action.");
-        return payload(s, viewer);
+        return payload(s, viewer, forceLocal);
       },
       true,
+      forceLocal,
     );
     return Response.json(result, { headers: sessionHeaders(request, session) });
   } catch {

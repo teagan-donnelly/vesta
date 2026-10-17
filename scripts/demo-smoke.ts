@@ -3,6 +3,15 @@
 import assert from "node:assert/strict";
 const base = process.env.DEMO_BASE_URL || "http://localhost:3000";
 let cookie = "";
+const jar = new Map<string, string>();
+function remember(response: Response) {
+  for (const item of response.headers.getSetCookie()) {
+    const pair = item.split(";")[0];
+    const index = pair.indexOf("=");
+    jar.set(pair.slice(0, index), pair.slice(index + 1));
+  }
+  cookie = [...jar].map(([k, v]) => `${k}=${v}`).join("; ");
+}
 async function api(profile: string, body?: Record<string, unknown>) {
   const r = await fetch(`${base}/api/collaboration?profile=${profile}`, {
     method: body ? "POST" : "GET",
@@ -13,7 +22,7 @@ async function api(profile: string, body?: Record<string, unknown>) {
     },
     ...(body ? { body: JSON.stringify({ ...body, confirmed: true }) } : {}),
   });
-  cookie = r.headers.get("set-cookie")?.split(";")[0] || cookie;
+  remember(r);
   const value = await r.json();
   console.log(`Demo ${profile}: ${body?.action || "read"} → HTTP ${r.status}`);
   if (value.assistant)
@@ -24,6 +33,44 @@ async function api(profile: string, body?: Record<string, unknown>) {
   return value;
 }
 async function main() {
+  if (process.env.DEMO_PLANNING_STORE === "local") {
+    const r = await fetch(`${base}/api/planning-storage`, {
+      method: "POST",
+      headers: {
+        origin: new URL(base).origin,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ store: "local", confirmed: true }),
+    });
+    assert.equal(r.status, 200);
+    remember(r);
+    console.log(
+      "Explicitly selected local fictional planning for this isolated smoke-test session.",
+    );
+  }
+  for (const path of [
+    "/",
+    "/shared",
+    "/plan?section=forecast",
+    "/plan?section=spending",
+    "/plan?section=credit",
+    "/assistant",
+    "/domino",
+    "/protect",
+    "/credit",
+    "/deadbolt",
+    "/continuity",
+    "/settings",
+  ]) {
+    const r = await fetch(base + path);
+    const html = await r.text();
+    assert.equal(r.status, 200);
+    const main =
+      html.match(/<nav aria-label="Main navigation">([\s\S]*?)<\/nav>/)?.[1] ||
+      "";
+    assert.equal((main.match(/class="nav-item/g) || []).length, 4);
+    assert.ok(html.includes("/brand/vesta-goddess.png"));
+  }
   await api("kevin");
   await api("kevin", {
     action: "consent",

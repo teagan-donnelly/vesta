@@ -13,7 +13,8 @@ export async function backboard(path: string, method = "GET", body?: unknown) {
     signal: AbortSignal.timeout(20000),
     redirect: "error",
   });
-  if (!response.ok) throw new Error("Backboard unavailable.");
+  if (!response.ok)
+    throw new Error(`Backboard unavailable (HTTP ${response.status}).`);
   return response.status === 204 ? {} : response.json();
 }
 export async function ensureAssistant(plan: PrivatePlan, namespace: string) {
@@ -39,10 +40,11 @@ export async function remotePreferences(
     `/assistants/${encodeURIComponent(id)}/memories`,
   );
   for (const memory of result.memories || []) {
-    if (typeof memory.memory_id !== "string")
+    const memoryId = memory.memory_id || memory.id;
+    if (typeof memoryId !== "string")
       throw new Error("Backboard memory response invalid.");
     await backboard(
-      `/assistants/${encodeURIComponent(id)}/memories/${encodeURIComponent(memory.memory_id)}`,
+      `/assistants/${encodeURIComponent(id)}/memories/${encodeURIComponent(memoryId)}`,
       "DELETE",
     );
   }

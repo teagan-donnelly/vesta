@@ -25,7 +25,8 @@ export default function CreditPage() {
   if (!data)
     return (
       <AegisShell
-        title="Credit"
+        planSection="credit"
+        title="Plan Ahead"
         subtitle="Understand your obligations and the habits behind a stronger credit profile."
       >
         <FinancialLoading />
@@ -42,7 +43,8 @@ export default function CreditPage() {
       : null;
   return (
     <AegisShell
-      title="Credit"
+      planSection="credit"
+      title="Plan Ahead"
       subtitle="Understand your obligations and the habits behind a stronger credit profile."
     >
       <MetricGrid
@@ -111,7 +113,7 @@ export default function CreditPage() {
             />
           )}
           <div className="panel-body" style={{ paddingTop: 16 }}>
-            <Link href="/domino" className="text-link">
+            <Link href="/plan?section=forecast" className="text-link">
               Test a payment adjustment in Domino <ArrowUpRight size={12} />
             </Link>
           </div>

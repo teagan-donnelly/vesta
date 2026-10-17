@@ -18,6 +18,7 @@ import type { DataSource, FinancialData, Simulation } from "@/lib/types";
 import { Button, Notice, EmptyState, LoadingState } from "./ui";
 import Link from "next/link";
 import { ensureDemoSession } from "@/lib/demo-session-client";
+import { PlanningRecovery } from "./planning-recovery";
 
 type State = {
   mode: DataSource;
@@ -169,7 +170,17 @@ export function useFinancial() {
   return value;
 }
 export function FinancialLoading() {
-  const { error } = useFinancial();
+  const { error, mode, customer } = useFinancial();
+  if (error && mode === "demo" && customer.startsWith("demo:"))
+    return (
+      <div>
+        <EmptyState
+          title="Your planning connection needs attention"
+          description="Review the database connection, or choose a separate local fictional demonstration."
+        />
+        <PlanningRecovery />
+      </div>
+    );
   return error ? (
     <EmptyState
       title="Your financial information is unavailable"
