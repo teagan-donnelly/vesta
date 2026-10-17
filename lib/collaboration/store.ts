@@ -177,8 +177,9 @@ export async function withDemo<T>(
     .catch(() => {})
     .then(async () => {
       if (process.env.TIGER_DATABASE_URL && !forceLocal) {
-        const client = await pool().connect();
+        let client: PoolClient | undefined;
         try {
+          client = await pool().connect();
           await client.query("BEGIN");
           await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
             id,
@@ -188,13 +189,17 @@ export async function withDemo<T>(
           if (write) await dbSave(client, id, state);
           await client.query("COMMIT");
           return value;
-        } catch {
-          await client.query("ROLLBACK");
+        } catch (error) {
+          if (client) await client.query("ROLLBACK").catch(() => {});
+          const rawCode = (error as { code?: string })?.code;
+          const code = ["SELF_SIGNED_CERT_IN_CHAIN", "UNABLE_TO_VERIFY_LEAF_SIGNATURE", "CERT_HAS_EXPIRED", "42P01", "42703", "28P01", "ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND"].includes(rawCode || "") ? rawCode : "PLANNING_UNAVAILABLE";
+          // Never log provider messages, queries, URLs, credentials or state.
+          console.error("[vesta-planning]", JSON.stringify({ code }));
           throw new Error(
             "Planning database unavailable. Check migrations and connection settings.",
           );
         } finally {
-          client.release();
+          client?.release();
         }
       }
       const root =

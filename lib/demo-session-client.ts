@@ -2,7 +2,7 @@
 // components mount together. Contains no financial data or identity credentials.
 let bootstrap: Promise<void> | undefined;
 export function ensureDemoSession() {
-  return (bootstrap ||= fetch("/api/collaboration?profile=kevin&list=1", {
+  return (bootstrap ||= fetch("/api/demo-session", {
     cache: "no-store",
   })
     .then((r) => {

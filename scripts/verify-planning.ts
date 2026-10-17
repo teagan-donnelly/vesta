@@ -23,7 +23,14 @@ async function main() {
         "SELECT extversion FROM pg_extension WHERE extname='timescaledb'",
       );
       if (!result.rowCount) throw Error();
-      await pool().query("SELECT count(*) FROM vesta_demo_sessions");
+      // Read-only checks cover every migrated relation, including the Timescale
+      // history view. Never run migrations or mutate existing records here.
+      for (const relation of [
+        "vesta_demo_sessions", "vesta_demo_profiles", "vesta_workspaces",
+        "vesta_memberships", "vesta_commitments", "vesta_contributions",
+        "vesta_consents", "vesta_private_plans", "vesta_readiness_snapshots",
+        "vesta_daily_readiness",
+      ]) await pool().query(`SELECT * FROM ${relation} LIMIT 0`);
       console.log(
         "Tiger Data: database read, Timescale extension, and planning schema verified.",
       );
@@ -33,7 +40,9 @@ async function main() {
         code === "SELF_SIGNED_CERT_IN_CHAIN" ||
           code === "UNABLE_TO_VERIFY_LEAF_SIGNATURE"
           ? "Tiger Data: certificate chain is not trusted. Supply the provider CA in TIGER_DATABASE_CA; verification remains enabled."
-          : "Tiger Data: verification failed. Check connectivity and run db:migrate. No URL logged.",
+          : code === "42P01" || code === "42703"
+            ? "Tiger Data: planning schema is missing or incomplete. Review migrations/001_collaborative_planning.sql before running db:migrate. No records changed."
+            : "Tiger Data: verification failed. Check connectivity and server configuration. No URL logged and no records changed.",
       );
       process.exitCode = 1;
     } finally {

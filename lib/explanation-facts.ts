@@ -43,7 +43,7 @@ export function explanationFacts(
     },
     {
       id: "coverage",
-      text: "Everyday discretionary spending is excluded. Payroll timing is estimated from history, and checking and savings are pooled. Review data coverage in Settings before relying on a projected balance.",
+      text: `${data.warnings.some((w) => w.startsWith("Shared planning is not included")) ? "Shared planning is not included: shared obligations and saved scenarios are missing, so this forecast is incomplete. " : ""}Everyday discretionary spending is excluded. Payroll timing is estimated from history, and checking and savings are pooled. Review data coverage in Settings before relying on a projected balance.`,
     },
   ];
 }

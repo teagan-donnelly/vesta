@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
@@ -18,7 +19,6 @@ import type { DataSource, FinancialData, Simulation } from "@/lib/types";
 import { Button, Notice, EmptyState, LoadingState } from "./ui";
 import Link from "next/link";
 import { ensureDemoSession } from "@/lib/demo-session-client";
-import { PlanningRecovery } from "./planning-recovery";
 
 type State = {
   mode: DataSource;
@@ -53,17 +53,18 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
   }>({ profile: "", value: {} });
   const simulation =
     scenarioState.profile === preferences ? scenarioState.value : {};
-  const setSimulation = (value: Simulation) =>
+  const draftRevision = useRef(0);
+  const setSimulation = (value: Simulation) => {
+    draftRevision.current++;
     setScenarioState({ profile: preferences, value });
+  };
   const visibleData =
     dataProfile === preferences && data?.source === mode ? data : null;
   const visibleError = errorProfile === preferences ? error : "";
   useEffect(() => {
     const controller = new AbortController();
-    (mode === "demo" && customer.startsWith("demo:")
-      ? ensureDemoSession()
-      : Promise.resolve()
-    )
+    const revision = draftRevision.current;
+    Promise.resolve()
       .then(() =>
         fetch(
           `/api/financial-data?mode=${mode}&customer=${encodeURIComponent(customer)}`,
@@ -96,6 +97,26 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         setDataProfile(JSON.stringify({ mode, customer: resolvedCustomer }));
         setError("");
         setLoading(false);
+        // Planning enriches an already usable personal snapshot. Its failure
+        // must never enter the personal-data error path or cross profile changes.
+        if (mode === "demo" && customer.startsWith("demo:")) {
+          void ensureDemoSession()
+            .then(() => {
+              if (controller.signal.aborted) return null;
+              return fetch(`/api/personal-planning?profile=${encodeURIComponent(customer.slice(5))}`, {
+                signal: controller.signal, cache: "no-store",
+              });
+            })
+            .then(async (response) => {
+              if (!response || !response.ok) return;
+              const enriched = await response.json();
+              if (controller.signal.aborted) return;
+              setData(enriched);
+              if (draftRevision.current === revision)
+                setScenarioState({ profile: JSON.stringify({ mode, customer }), value: enriched.planningSimulation || {} });
+            })
+            .catch(() => { /* Keep the labeled personal-only snapshot. */ });
+        }
         if (mode === "nessie" && !customer) {
           if (resolvedCustomer)
             saveProfile({ mode, customer: resolvedCustomer });
@@ -170,17 +191,7 @@ export function useFinancial() {
   return value;
 }
 export function FinancialLoading() {
-  const { error, mode, customer } = useFinancial();
-  if (error && mode === "demo" && customer.startsWith("demo:"))
-    return (
-      <div>
-        <EmptyState
-          title="Your planning connection needs attention"
-          description="Review the database connection, or choose a separate local fictional demonstration."
-        />
-        <PlanningRecovery />
-      </div>
-    );
+  const { error } = useFinancial();
   return error ? (
     <EmptyState
       title="Your financial information is unavailable"
@@ -222,6 +233,11 @@ export function DataStatus() {
             </div>
           </Notice>
         </div>
+      )}
+      {data?.warnings.some((w) => w.startsWith("Shared planning is not included")) && (
+        <Notice tone="caution">
+          <p>Personal balances and activity are available. Shared obligations and saved scenarios are not included yet; forecasts are incomplete. <Link href="/shared">Open Shared Finances</Link> to retry or explicitly choose local fictional planning.</p>
+        </Notice>
       )}
       {data?.warnings.some((w) => /pending|Loans are displayed/i.test(w)) && (
         <Notice tone="caution">

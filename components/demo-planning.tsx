@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useFinancial } from "./financial-provider";
 import { Button, EmptyState } from "./ui";
 import type { payload } from "@/app/api/collaboration/route";
@@ -33,9 +33,12 @@ export function DemoGate({
 export function useDemoPlanning(profile: string) {
   const [data, setData] = useState<PlanningPayload | null>(null);
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [errorProfile, setErrorProfile] = useState("");
+  const [busyProfile, setBusyProfile] = useState("");
+  const active = useRef(profile);
   const { reload } = useFinancial();
   useEffect(() => {
+    active.current = profile;
     const controller = new AbortController();
     ensureDemoSession()
       .then(() =>
@@ -50,16 +53,22 @@ export function useDemoPlanning(profile: string) {
         return r.json();
       })
       .then((r) => {
-        if (!controller.signal.aborted) setData(r);
+        if (!controller.signal.aborted) {
+          setData(r);
+          setError("");
+        }
       })
       .catch((e) => {
-        if (!controller.signal.aborted) setError(e.message);
+        if (!controller.signal.aborted) {
+          setErrorProfile(profile);
+          setError(e.message);
+        }
       });
-    return () => controller.abort();
+    return () => { controller.abort(); active.current = ""; };
   }, [profile]);
   const change = useCallback(
     async (body: Record<string, unknown>) => {
-      setBusy(true);
+      setBusyProfile(profile);
       setError("");
       try {
         const r = await fetch(`/api/collaboration?profile=${profile}`, {
@@ -68,22 +77,25 @@ export function useDemoPlanning(profile: string) {
           body: JSON.stringify({ ...body, confirmed: true }),
         });
         const value = await r.json();
+        if (active.current !== profile) return null;
         if (!r.ok) throw Error(value.error);
         setData(value);
         if (body.action === "workspace" || body.action === "member")
           window.dispatchEvent(new Event("vesta-workspaces-change"));
-        reload(true);
+        if (["workspace", "member", "commitment", "removeCommitment", "scenario"].includes(String(body.action))) reload(true);
         return value;
       } catch (e) {
+        if (active.current !== profile) return null;
+        setErrorProfile(profile);
         setError(e instanceof Error ? e.message : "Change unavailable.");
         return null;
       } finally {
-        setBusy(false);
+        if (active.current === profile) setBusyProfile("");
       }
     },
     [profile, reload],
   );
-  return { data, error, busy, change };
+  return { data: data?.profile === profile ? data : null, error: errorProfile === profile ? error : "", busy: busyProfile === profile, change };
 }
 export function DemoDisclosure({ storage }: { storage?: string }) {
   return (

@@ -48,7 +48,7 @@ export function ExplanationPanel({ scenario = false }: { scenario?: boolean }) {
               const response = await fetch("/api/explain", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ mode, customer, simulation: applied }),
+                body: JSON.stringify({ mode, customer, simulation: applied, personalOnly: data?.warnings.some((w) => w.startsWith("Shared planning is not included")) }),
               });
               const body = await response.json();
               if (!response.ok) throw new Error("Unavailable");
