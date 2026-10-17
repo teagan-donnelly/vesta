@@ -337,3 +337,26 @@ test("simultaneous confirmations cannot write the scenario twice", async (t) => 
   assert.equal(outcomes.filter((o) => o.status === "rejected").length, 1);
   assert.equal(state.posts, 33);
 });
+test("production rejects sandbox setup even when the request hostname is localhost", async (t) => {
+  const original = process.env.NODE_ENV;
+  Object.assign(process.env, { NODE_ENV: "production" });
+  t.after(() => {
+    if (original === undefined) Reflect.deleteProperty(process.env, "NODE_ENV");
+    else Object.assign(process.env, { NODE_ENV: original });
+  });
+  t.mock.method(globalThis, "fetch", async () => {
+    throw new Error("No upstream call is allowed");
+  });
+  const result = await scenarioRoute(
+    new Request("http://localhost:3000/api/nessie/scenario", {
+      method: "POST",
+      headers: { origin: "http://localhost:3000" },
+      body: JSON.stringify({
+        action: "preview",
+        customerId: "c",
+        accountId: "a",
+      }),
+    }),
+  );
+  assert.equal(result.status, 403);
+});

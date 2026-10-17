@@ -65,7 +65,7 @@ export async function loadNessie(customerId?: string): Promise<FinancialData> {
   }));
   const selected = customerId
     ? customers.find((c) => c.id === customerId)
-    : customers[0];
+    : customers.find((c) => c.name === "Vesta Fictional Test") || customers[0];
   if (customerId && !selected)
     throw new Error("Selected Nessie customer was not found.");
   const warnings: string[] = [];

@@ -11,13 +11,13 @@ Run `npm.cmd install`, then `npm.cmd run dev`, and open http://localhost:3000. K
 **No records were seeded during this development phase.** Read-only inspection found one **Vesta Fictional Test** customer, one **Vesta fictional checking** account with **$2,000**, and zero deposits, withdrawals, bills, loans or merchants. The real preview endpoint was tested, followed by another read: the balance remained $2,000 and transaction/bill counts remained zero.
 
 1. Start the app with `npm.cmd run dev` and open **http://localhost:3000/settings**.
-2. In the header, select **Nessie Sandbox Mode** and **Vesta Fictional Test**. Under **Prepare fictional Nessie activity**, select **Vesta fictional checking**.
+2. In the header, select **Nessie Sandbox** and **Vesta Fictional Test**. Expand **Developer setup · Fictional Nessie scenario (localhost only)**, then select **Vesta fictional checking** under **Prepare fictional Nessie activity**.
 3. Click **Preview fictional dataset**. This only reads Nessie and saves a local proposal; it sends no financial creation requests. Review the record table, expected forecast, balance effects, limitations, and expandable exact request bodies.
 4. To authorize writing, check the acknowledgment, type **SEED FICTIONAL DATA** exactly, then click **Confirm and write fictional records to Nessie**. Until you perform this explicit action, no scenario records are created. Previews expire after 30 minutes or when the local date changes. If records or balances change after preview, confirmation is rejected before writing.
 5. After confirmation, the workflow submits each record once and immediately retrieves it through its documented collection endpoint. It then performs a final read-back, displays retrieved record IDs, actual balance and analysis checks, and requests a grounded Gemini risk explanation. It refreshes Vesta's shared data snapshot. If Gemini is unavailable, the report clearly identifies deterministic guidance.
 6. Use **Verify existing Nessie records (read-only)** whenever you want to re-read the actual scenario records without creating anything. Navigate to Overview, Protect and Domino to demonstrate the shared retrieved data.
 
-A full browser reload starts in Demo Mode; select Nessie Sandbox Mode again. Client navigation retains the current mode and simulation. If the dev server uses another port, use that same localhost port for this workflow.
+The selected mode and Nessie customer are remembered across reloads in this browser. Navigation retains the current simulation; switching profiles clears it. When Nessie is selected, the app automatically retrieves its records without opening Settings or generating a preview. If the dev server uses another port, use that same localhost port for setup. Setup controls are omitted from production builds and their server routes reject production requests even on localhost; use `npm.cmd run dev` for setup.
 
 ### Proposed story
 
@@ -66,11 +66,17 @@ Deposit/withdrawal amounts use whole dollars as documented by the integer schema
 2. Protect should identify **StreamNest**, **Pulse Music**, and **CloudPocket** from repeated withdrawal history. Rent, utilities and debt remain distinct from subscriptions. The unusual $700 expense is a review flag, not a fraud determination.
 3. Select **Simulate removing StreamNest**, then open Domino. Compare baseline and scenario ending/lowest balances and affected dates. The baseline remains available. Simulations never change Nessie records.
 4. Try removing all three subscriptions, delaying an income event, adding an unexpected expense, delaying an optional payment, or adjusting a payment amount. Reset restores the baseline. Charges outside the 30-day horizon do not generate immediate savings.
-5. Review the post-seed grounded risk explanation, or select **Prioritize with Gemini** on Overview, Protect or Domino. Gemini only orders verified explanations; arbitrary financial claims cannot enter the UI. Prompts exclude customer names, account IDs/numbers, raw transaction descriptions and credentials.
+5. Review the post-seed grounded risk explanation, or select **Ask Gemini** on Overview, Protect or Domino. Gemini only orders verified explanations; arbitrary financial claims cannot enter the UI. Prompts exclude customer names, account IDs/numbers, raw transaction descriptions and credentials.
 
 Forecasts use integer cents and begin tomorrow from the displayed closing-balance snapshot (America/New_York). Historical records are evidence, not replayed against current cash. Known bills supersede inferred matching obligations to avoid double-counting. Payroll intervals are estimated, ordinary discretionary spending is not forecast, and loan amounts alone do not establish payment dates. Credit, Deadbolt and Continuity retain labeled fictional educational/planning examples.
 
 ## Validation
+
+The redesigned workspace uses the supplied Vesta goddess logo, a fixed sidebar with active navigation, a compact profile/data toolbar, consistent tables and controls, and restrained navy/burgundy styling. Overview combines account summaries, upcoming payments, recent activity and derived risks. Protect carries selected subscription removals into Domino. Domino overlays both projections on one shared, zero-inclusive scale with currency/date axes, hover/keyboard tooltips, negative-balance shading and a daily comparison table.
+
+Credit now separates retrieved card/debt information from an optional user-entered utilization worksheet. Deadbolt provides obligation/access review checklists without inferring shared ownership. Continuity provides a draft emergency plan and local download; notes and contact fields are not saved automatically. Technical coverage warnings and developer setup are in Settings. Only mode and customer ID are persisted; financial records and planning notes are not stored as preferences.
+
+Automated checks cover profile preference persistence, malformed preferences, common chart scales and date alignment, preserved forecast cents, subscription scenario changes, credit worksheet edge cases, and production sandbox protection in addition to existing finance/integration tests. Browser visual verification requires a connected browser; none was available during this session.
 
 - `npm.cmd test`: regression and mocked integration tests, including preview without writes, consent, normalized read-back, duplicate/concurrent-write prevention, changed snapshots, expiry, missing records and lost responses. All test financial writes go to mocks, never the real API.
 - `npm.cmd run lint`

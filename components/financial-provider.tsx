@@ -1,12 +1,21 @@
-"use client";
+﻿"use client";
 import {
   createContext,
   useContext,
   useEffect,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
+import {
+  parseProfile,
+  profileSnapshot,
+  saveProfile,
+  serverProfileSnapshot,
+  subscribeProfile,
+} from "@/lib/profile-preferences";
 import type { DataSource, FinancialData, Simulation } from "@/lib/types";
+import { Button, Notice, EmptyState, LoadingState } from "./ui";
 import Link from "next/link";
 
 type State = {
@@ -23,13 +32,29 @@ type State = {
 };
 const Context = createContext<State | null>(null);
 export function FinancialProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeValue] = useState<DataSource>("demo");
-  const [customer, setCustomerValue] = useState("");
+  const preferences = useSyncExternalStore(
+    subscribeProfile,
+    profileSnapshot,
+    serverProfileSnapshot,
+  );
+  const { mode, customer } = parseProfile(preferences);
   const [data, setData] = useState<FinancialData | null>(null);
+  const [dataProfile, setDataProfile] = useState("");
   const [error, setError] = useState("");
+  const [errorProfile, setErrorProfile] = useState("");
   const [loading, setLoading] = useState(true);
   const [version, setVersion] = useState(0);
-  const [simulation, setSimulation] = useState<Simulation>({});
+  const [scenarioState, setScenarioState] = useState<{
+    profile: string;
+    value: Simulation;
+  }>({ profile: "", value: {} });
+  const simulation =
+    scenarioState.profile === preferences ? scenarioState.value : {};
+  const setSimulation = (value: Simulation) =>
+    setScenarioState({ profile: preferences, value });
+  const visibleData =
+    dataProfile === preferences && data?.source === mode ? data : null;
+  const visibleError = errorProfile === preferences ? error : "";
   useEffect(() => {
     const controller = new AbortController();
     fetch(
@@ -39,16 +64,36 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
       .then(async (r) => {
         const result = await r.json();
         if (!r.ok) throw new Error(result.error);
-        return result;
+        return result as FinancialData;
       })
       .then((result) => {
+        if (controller.signal.aborted) return;
+        let resolvedCustomer = customer;
+        if (mode === "nessie" && !customer)
+          resolvedCustomer =
+            result.accounts[0]?.customerId ||
+            result.customers.find((c) => c.name === "Vesta Fictional Test")
+              ?.id ||
+            result.customers[0]?.id ||
+            "";
         setData(result);
+        setDataProfile(JSON.stringify({ mode, customer: resolvedCustomer }));
+        setError("");
         setLoading(false);
+        if (mode === "nessie" && !customer) {
+          if (resolvedCustomer)
+            saveProfile({ mode, customer: resolvedCustomer });
+        }
       })
       .catch((e) => {
-        if (e.name !== "AbortError") {
+        if (!controller.signal.aborted) {
           setData(null);
-          setError(e.message || "Data unavailable.");
+          setErrorProfile(JSON.stringify({ mode, customer }));
+          setError(
+            e instanceof Error
+              ? e.message
+              : "Financial information could not be loaded.",
+          );
           setLoading(false);
         }
       });
@@ -63,27 +108,27 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
   function setMode(value: DataSource) {
     if (value === mode) return;
     clear();
-    setCustomerValue("");
-    setModeValue(value);
+    saveProfile({ mode: value, customer });
   }
   function setCustomer(value: string) {
+    if (value === customer) return;
     clear();
-    setCustomerValue(value);
+    saveProfile({ mode, customer: value });
   }
   return (
     <Context.Provider
       value={{
         mode,
         setMode,
-        data,
-        error,
-        loading,
+        data: visibleData,
+        error: visibleError,
+        loading: loading || (!visibleData && !visibleError),
         customer,
         setCustomer,
         simulation,
         setSimulation,
-        reload: (preserveSnapshot = false) => {
-          if (preserveSnapshot) {
+        reload: (preserve = false) => {
+          if (preserve) {
             setError("");
             setLoading(true);
             setSimulation({});
@@ -101,38 +146,58 @@ export function useFinancial() {
   if (!value) throw new Error("FinancialProvider missing");
   return value;
 }
+export function FinancialLoading() {
+  const { error } = useFinancial();
+  return error ? (
+    <EmptyState
+      title="Your financial information is unavailable"
+      description="Your selected profile is retained. Retry the connection to continue."
+    />
+  ) : (
+    <LoadingState />
+  );
+}
 export function DataStatus() {
-  const { error, loading, data, reload } = useFinancial();
+  const { data, error, loading, reload, mode, customer, setCustomer } =
+    useFinancial();
   return (
     <>
-      {loading && (
-        <p role="status" className="mb-4 rounded-xl bg-white p-4">
-          Loading financial records…
+      {loading && data && (
+        <p role="status" className="refresh-status">
+          Updating financial information...
         </p>
       )}
       {error && (
-        <div role="alert" className="mb-4 rounded-xl bg-orange-50 p-4">
-          {error}{" "}
-          <button onClick={() => reload()} className="underline">
-            Retry
-          </button>
+        <div role="alert">
+          <Notice tone="risk">
+            <div>
+              <strong>Unable to load your financial information</strong>
+              <p>
+                Try again or{" "}
+                <Link href="/settings">review the connection details</Link>.
+              </p>
+            </div>
+            <div className="inline-actions">
+              {mode === "nessie" && customer && (
+                <Button variant="quiet" onClick={() => setCustomer("")}>
+                  Reset profile selection
+                </Button>
+              )}
+              <Button variant="secondary" onClick={() => reload()}>
+                Try again
+              </Button>
+            </div>
+          </Notice>
         </div>
       )}
-      {data?.warnings.map((w) => (
-        <p
-          key={w}
-          className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm"
-        >
-          {w}
-        </p>
-      ))}
-      {data && data.source === "nessie" && (
-        <p className="mb-4 text-sm">
-          <Link href="/settings" className="text-sky-700 underline">
-            Preview a fictional sandbox scenario in Settings
-          </Link>
-          . Records are created only after explicit confirmation on localhost.
-        </p>
+      {data?.warnings.some((w) => /pending|Loans are displayed/i.test(w)) && (
+        <Notice tone="caution">
+          <p>
+            Some activity is excluded from this cash forecast.{" "}
+            <Link href="/settings">Review data coverage</Link> before relying on
+            the projection.
+          </p>
+        </Notice>
       )}
     </>
   );

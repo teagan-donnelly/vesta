@@ -1,6 +1,6 @@
 import { loadEnvConfig } from "@next/env";
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 loadEnvConfig(process.cwd());
 const keys = ["NESSIE_API_KEY", "GEMINI_API_KEY"]
@@ -17,7 +17,9 @@ function assertNoKey(contents: Buffer | string) {
 function scan(path: string) {
   for (const item of readdirSync(path, { withFileTypes: true })) {
     const child = join(path, item.name);
-    if (item.isDirectory()) scan(child);
+    // OneDrive reparse-point directories can be reported as non-directory
+    // Dirents on Windows. Follow filesystem metadata before reading a file.
+    if (item.isDirectory() || statSync(child).isDirectory()) scan(child);
     else assertNoKey(readFileSync(child));
   }
 }

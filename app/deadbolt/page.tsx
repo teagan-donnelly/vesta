@@ -1,66 +1,189 @@
-import { CheckCircle2, ShieldAlert } from "lucide-react";
+﻿"use client";
+import Link from "next/link";
+import { useState } from "react";
+import { ArrowUpRight } from "lucide-react";
 import { AegisShell } from "@/components/aegis-shell";
-import { financialConnections } from "@/lib/demo-data";
-
+import {
+  useFinancial,
+  FinancialLoading,
+} from "@/components/financial-provider";
+import {
+  Panel,
+  MetricGrid,
+  Amount,
+  Badge,
+  Notice,
+  EmptyState,
+} from "@/components/ui";
+import { ReviewChecklist } from "@/components/review-checklist";
+import { dateLabel } from "@/components/activity-table";
 export default function DeadboltPage() {
+  const { data } = useFinancial();
+  const [review, setReview] = useState<string[]>([]);
+  if (!data)
+    return (
+      <AegisShell
+        title="Deadbolt"
+        subtitle="A practical plan for financial independence during a life transition."
+      >
+        <FinancialLoading />
+      </AegisShell>
+    );
   return (
     <AegisShell
       title="Deadbolt"
-      subtitle="Financial separation planning for shared obligations and household transitions."
+      subtitle="A practical plan for financial independence during a life transition."
+      actions={
+        <Link className="button button-secondary" href="/domino">
+          Plan your next budget <ArrowUpRight size={13} />
+        </Link>
+      }
     >
-      <p className="mb-4 rounded-xl bg-amber-50 p-4 text-sm">
-        Fictional planning examples. Shared ownership and account access cannot
-        be inferred from Nessie records. Review actual obligations on Overview
-        and Protect before using this checklist.
-      </p>
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5 text-amber-500" />
-            <h2 className="text-xl font-semibold">
-              Shared financial connections
-            </h2>
+      <Notice>
+        Shared ownership and account access are not established by your
+        financial records. Mark obligations you want to review; selections do
+        not change payments or permissions.
+      </Notice>
+      <MetricGrid
+        items={[
+          {
+            label: "Accounts to consider",
+            value: data.accounts.length,
+            note: "From the current financial profile",
+          },
+          {
+            label: "Known obligations",
+            value: data.bills.length,
+            note: "Review responsibility with each provider",
+          },
+          {
+            label: "Marked for review",
+            value: review.length,
+            note: "Your selections on this page",
+          },
+          {
+            label: "Shared ownership",
+            value: "Unverified",
+            note: "Requires confirmation outside Vesta",
+          },
+        ]}
+      />
+      <div className="dashboard-grid">
+        <Panel
+          title="Review financial connections"
+          description="Known obligations that may need a conversation or an access review."
+        >
+          {data.bills.length ? (
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Review</th>
+                    <th scope="col">Obligation</th>
+                    <th scope="col">Due</th>
+                    <th scope="col" className="align-right">
+                      Amount
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.bills.map((bill) => (
+                    <tr key={bill.id}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          aria-label={`Review responsibility for ${bill.name}`}
+                          checked={review.includes(bill.id)}
+                          onChange={(e) =>
+                            setReview(
+                              e.target.checked
+                                ? [...review, bill.id]
+                                : review.filter((id) => id !== bill.id),
+                            )
+                          }
+                        />
+                      </td>
+                      <td>
+                        <strong style={{ fontWeight: 500 }}>{bill.name}</strong>
+                        <span className="subtext">
+                          Payment responsibility not verified
+                        </span>
+                      </td>
+                      <td>{dateLabel(bill.dueDate)}</td>
+                      <td className="align-right">
+                        <Amount cents={bill.amountCents} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyState
+              title="No obligations available to review"
+              description="Use your provider statements to identify any shared payments or accounts. Vesta will list dated bills when they are returned."
+            />
+          )}
+          <div className="panel-body" style={{ paddingTop: 16 }}>
+            <p className="subtext">
+              Review selections are not saved. No account access or bank records
+              are modified.
+            </p>
           </div>
-          <div className="mt-4 space-y-3">
-            {financialConnections.map((connection) => (
-              <div
-                key={connection.id}
-                className="rounded-xl border border-slate-200 bg-slate-50 p-4"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium">{connection.label}</p>
-                  <span className="rounded-full bg-slate-200 px-2 py-1 text-[10px] uppercase tracking-wide text-slate-700">
-                    {connection.type}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-slate-600">{connection.note}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-xl font-semibold">Action checklist</h2>
-          <ul className="mt-4 space-y-3 text-sm text-slate-600">
-            {[
-              "Review utilities and shared subscriptions",
-              "Update account access and payment methods",
-              "Verify account security and authorized user settings",
-              "Create a post-separation budget map",
-            ].map((item, index) => (
-              <li
-                key={item}
-                className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3"
-              >
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
-                <span>
-                  {index + 1}. {item}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        </Panel>
+        <Panel
+          title="Separation checklist"
+          description="Work through the details at your own pace."
+        >
+          <ReviewChecklist
+            items={[
+              {
+                title: "Confirm responsibilities",
+                detail:
+                  "Discuss who is responsible for each bill, subscription, and debt.",
+              },
+              {
+                title: "Review account access",
+                detail:
+                  "Check authorized users, recovery contacts, and shared credentials with your providers.",
+              },
+              {
+                title: "Update payment arrangements",
+                detail:
+                  "Confirm new payment methods and due dates before stopping a shared arrangement.",
+              },
+              {
+                title: "Build a personal cash plan",
+                detail:
+                  "Use Domino to compare the timing and cost of your next financial commitments.",
+              },
+            ]}
+          />
+        </Panel>
       </div>
+      <Panel
+        title="Accounts in this profile"
+        description="Account presence does not establish ownership rights or shared access."
+        className="section-gap"
+      >
+        {data.accounts.map((account) => (
+          <div key={account.id} className="structured-row">
+            <div>
+              <strong style={{ fontSize: 12, fontWeight: 500 }}>
+                {account.name}
+              </strong>
+              <span className="subtext">{account.type}</span>
+            </div>
+            <Badge>Access not verified</Badge>
+          </div>
+        ))}
+        {!data.accounts.length && (
+          <EmptyState
+            title="No accounts returned"
+            description="Select a financial profile to review available accounts."
+          />
+        )}
+      </Panel>
     </AegisShell>
   );
 }

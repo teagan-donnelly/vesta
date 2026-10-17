@@ -1,65 +1,195 @@
-type ForecastPoint = {
-  date: string;
-  balanceCents: number;
-};
-
-type ForecastChartProps = {
-  points: ForecastPoint[];
+﻿"use client";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+  ReferenceArea,
+  ReferenceDot,
+} from "recharts";
+import { comparisonRows, chartDomain, riskIntervals } from "@/lib/chart-data";
+import { formatCurrency } from "@/lib/analysis";
+import { dateLabel } from "./activity-table";
+type Point = { date: string; balanceCents: number };
+export function ForecastChart({
+  points,
+  scenarioPoints,
+  height = 270,
+}: {
+  points: Point[];
+  scenarioPoints?: Point[];
   height?: number;
   color?: string;
-};
-
-export function ForecastChart({ points, height = 260, color = "#0f766e" }: ForecastChartProps) {
-  const width = 720;
-  const padding = { top: 18, right: 18, bottom: 26, left: 18 };
-  const values = points.map((point) => point.balanceCents);
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
-  const range = Math.max(maxValue - minValue, 1);
-
-  const xFor = (index: number) => {
-    const usableWidth = width - padding.left - padding.right;
-    return padding.left + (usableWidth * index) / Math.max(points.length - 1, 1);
-  };
-
-  const yFor = (value: number) => {
-    const usableHeight = height - padding.top - padding.bottom;
-    return height - padding.bottom - ((value - minValue) / range) * usableHeight;
-  };
-
-  const linePath = points
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${xFor(index)} ${yFor(point.balanceCents)}`)
-    .join(" ");
-
-  const areaPath = `${linePath} L ${xFor(points.length - 1)} ${height - padding.bottom} L ${xFor(0)} ${height - padding.bottom} Z`;
-
+}) {
+  const rows = comparisonRows(points, scenarioPoints);
+  const domain = chartDomain(rows);
+  const intervals = riskIntervals(rows);
+  const low = rows.reduce<{ date: string; value: number } | null>((a, r) => {
+    const value = Math.min(r.baseline, r.scenario ?? Infinity);
+    return !a || value < a.value ? { date: r.date, value } : a;
+  }, null);
+  if (!rows.length)
+    return <div className="chart-empty">No forecast points available.</div>;
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full" role="img" aria-label="Forecast balance chart">
-      <defs>
-        <linearGradient id={`forecast-${color.replace("#", "")}`} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-          <stop offset="100%" stopColor={color} stopOpacity={0.04} />
-        </linearGradient>
-      </defs>
-
-      {[0, 1, 2, 3].map((step) => {
-        const y = padding.top + (step * (height - padding.top - padding.bottom)) / 3;
-        return <line key={step} x1={padding.left} x2={width - padding.right} y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="4 4" />;
-      })}
-
-      <path d={areaPath} fill={`url(#forecast-${color.replace("#", "")})`} />
-      <path d={linePath} fill="none" stroke={color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
-
-      {points.map((point, index) => (
-        <g key={point.date}>
-          <circle cx={xFor(index)} cy={yFor(point.balanceCents)} r={3.5} fill={color} />
-          {index % Math.ceil(points.length / 5) === 0 && (
-            <text x={xFor(index)} y={height - 8} textAnchor="middle" fill="#64748b" fontSize="11">
-              {point.date}
-            </text>
-          )}
-        </g>
-      ))}
-    </svg>
+    <figure
+      aria-label={
+        scenarioPoints
+          ? "Baseline and simulation on a shared balance scale"
+          : "Projected cash balance"
+      }
+      style={{ margin: 0 }}
+    >
+      <div className="chart-legend" style={{ padding: "0 20px 10px" }}>
+        <span>
+          <i className="legend-dot" />
+          Baseline
+        </span>
+        {scenarioPoints && (
+          <span>
+            <i className="legend-dot scenario" />
+            Simulation
+          </span>
+        )}
+        {intervals.length > 0 && <span className="negative">Below zero</span>}
+      </div>
+      <div className="chart-frame" style={{ height }}>
+        <ResponsiveContainer
+          width="100%"
+          height="100%"
+          minWidth={0}
+          initialDimension={{ width: 700, height }}
+        >
+          <LineChart
+            data={rows}
+            margin={{ top: 12, right: 18, bottom: 4, left: 2 }}
+            accessibilityLayer
+          >
+            <CartesianGrid stroke="#edf0f3" vertical={false} />
+            <XAxis
+              dataKey="date"
+              tickFormatter={(value) => dateLabel(value)}
+              tick={{ fontSize: 10, fill: "#5f6f85" }}
+              axisLine={false}
+              tickLine={false}
+              minTickGap={55}
+              tickMargin={12}
+            />
+            <YAxis
+              domain={domain}
+              width={58}
+              tickFormatter={(value) =>
+                new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                  notation: "compact",
+                  maximumFractionDigits: 1,
+                }).format(value / 100)
+              }
+              tick={{ fontSize: 10, fill: "#5f6f85" }}
+              axisLine={false}
+              tickLine={false}
+              tickMargin={8}
+            />
+            {intervals.map((range, i) => (
+              <ReferenceArea
+                key={i}
+                x1={range.start}
+                x2={range.end}
+                fill="#bd3743"
+                fillOpacity={0.045}
+              />
+            ))}
+            <ReferenceLine y={0} stroke="#c8a3a9" strokeDasharray="4 4" />
+            <Tooltip
+              cursor={{ stroke: "#cfd5de", strokeDasharray: "3 3" }}
+              content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null;
+                const base = payload.find(
+                  (p) => p.dataKey === "baseline",
+                )?.value;
+                const scenario = payload.find(
+                  (p) => p.dataKey === "scenario",
+                )?.value;
+                return (
+                  <div className="chart-tooltip">
+                    <strong>{dateLabel(String(label), true)}</strong>
+                    {typeof base === "number" && (
+                      <p>
+                        Baseline{" "}
+                        <span className="amount">{formatCurrency(base)}</span>
+                      </p>
+                    )}
+                    {typeof scenario === "number" && (
+                      <p>
+                        Simulation{" "}
+                        <span className="amount">
+                          {formatCurrency(scenario)}
+                        </span>
+                      </p>
+                    )}
+                    {typeof base === "number" &&
+                      typeof scenario === "number" && (
+                        <p>
+                          Difference{" "}
+                          <span
+                            className={
+                              scenario >= base ? "positive" : "negative"
+                            }
+                          >
+                            {formatCurrency(scenario - base)}
+                          </span>
+                        </p>
+                      )}
+                  </div>
+                );
+              }}
+            />
+            <Line
+              dataKey="baseline"
+              name="Baseline"
+              type="stepAfter"
+              stroke="#24354d"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }}
+              isAnimationActive={false}
+            />
+            {scenarioPoints && (
+              <Line
+                dataKey="scenario"
+                name="Simulation"
+                type="stepAfter"
+                stroke="#7d3548"
+                strokeWidth={2}
+                strokeDasharray="5 3"
+                dot={false}
+                activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }}
+                isAnimationActive={false}
+              />
+            )}
+            {low && low.value < 0 && (
+              <ReferenceDot
+                x={low.date}
+                y={low.value}
+                r={3.5}
+                fill="#bd3743"
+                stroke="#fff"
+                strokeWidth={2}
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <figcaption className="sr-only">
+        Balances are calculated in integer cents, displayed in US dollars. Both
+        forecasts share the same dates and vertical scale, which includes zero.
+        Red shading marks periods below zero. Use the daily balance table for
+        exact values.
+      </figcaption>
+    </figure>
   );
 }

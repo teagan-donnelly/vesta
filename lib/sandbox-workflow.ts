@@ -48,6 +48,7 @@ export class WorkflowError extends Error {
 export function assertLocalRequest(request: Request, mutating = false) {
   const url = new URL(request.url);
   if (
+    process.env.NODE_ENV === "production" ||
     process.env.VERCEL ||
     !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) ||
     (mutating
