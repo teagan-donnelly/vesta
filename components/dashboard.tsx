@@ -13,24 +13,27 @@ import {
 import { AegisShell } from "./aegis-shell";
 import { useFinancial, FinancialLoading } from "./financial-provider";
 import { Amount, Panel, EmptyState, Badge } from "./ui";
-import { HistoryChart, AllocationChart } from "./record-charts";
+import { AllocationChart } from "./record-charts";
 import { dateLabel } from "./activity-table";
 import { FinancialRisk } from "./financial-risk";
 import { ExplanationPanel } from "./explanation-panel";
 import {
+  formatCurrency,
   alertsFor,
   forecastEvents,
   liquidBalance,
   project,
 } from "@/lib/analysis";
 import {
-  expenseDays,
   financialTotals,
   spendingCategories,
 } from "@/lib/management";
+import { HomeHistoryChart } from "./home-history-chart";
+import { historyView } from "@/lib/history-view";
 export function Dashboard() {
   const { data, recordsError } = useFinancial();
   const [chart, setChart] = useState("balance");
+  const [days, setDays] = useState(30);
   if (!data)
     return (
       <AegisShell title="Home" subtitle="Your financial future, protected.">
@@ -46,6 +49,7 @@ export function Dashboard() {
   const obligations = forecastEvents(data).filter(
     (event) => event.amountCents < 0,
   );
+  const history = historyView(data, days);
   const cards = [
     {
       label: "Total available balance",
@@ -124,27 +128,23 @@ export function Dashboard() {
           <div className="overview-chart-label">
             <CalendarDays size={16} />
             <span>
-              {dateLabel(`${data.asOf.slice(0, 8)}01`)} –{" "}
-              {dateLabel(data.asOf, true)}
+              {dateLabel(history.start)} – {dateLabel(history.end, true)}
             </span>
-            <Badge>Month to date</Badge>
+            <Badge>Historical · daily records</Badge>
+            <select aria-label="History date range" value={days} onChange={e => setDays(Number(e.target.value))}>{[7,30,60].map(n => <option value={n} key={n}>Last {n} Days</option>)}</select>
           </div>
-          {chart === "balance" && data.source === "demo" && data.balanceHistory?.length ? (
-            <HistoryChart points={data.balanceHistory.filter(p => p.date.startsWith(data.asOf.slice(0, 7)))} bars seriesName="Closing balance" label="Reconciled fictional daily closing balances" />
+          {chart === "balance" && history.balances.length ? (
+            <HomeHistoryChart data={data} days={days} expenses={false} />
           ) : chart === "expenses" ? (
             data.transactions.some(
-              (t) => !t.pending && t.date.startsWith(data.asOf.slice(0, 7)),
+              (t) => !t.pending && t.date >= history.start && t.date <= history.end && t.amountCents < 0,
             ) ? (
-              <HistoryChart
-                points={expenseDays(data)}
-                bars
-                label="Recorded daily expenses for the current month"
-              />
+              <HomeHistoryChart data={data} days={days} expenses />
             ) : (
               <div className="chart-placeholder">
                 <EmptyState
                   title="Your spending story starts here"
-                  description="No completed activity was returned for this month. Available records will appear here without invented spending."
+                  description="No completed spending was returned for this selected date range. Available records will appear here without invented activity."
                   action={
                     <Link className="text-link" href="/transactions">
                       View or track transactions →
@@ -174,7 +174,7 @@ export function Dashboard() {
           )}
           <div className="forecast-caption">
             <span>
-              Only recorded activity. Everyday future spending is not assumed.
+              {chart === "expenses" ? `${formatCurrency(history.spendingCents)} recorded spending in this ${days}-day window.` : "Historical closing cash, not a future prediction."} Future balances are shown in Plan Ahead.
             </span>
             <Link href="/transactions" className="text-link">
               Explore activity →

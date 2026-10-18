@@ -19,11 +19,13 @@ export function ForecastChart({
   points,
   scenarioPoints,
   height = 360,
+  deadlineDate,
 }: {
   points: Point[];
   scenarioPoints?: Point[];
   height?: number;
   color?: string;
+  deadlineDate?: string;
 }) {
   const rows = comparisonRows(points, scenarioPoints);
   const domain = chartDomain(rows);
@@ -65,7 +67,7 @@ export function ForecastChart({
         >
           <LineChart
             data={rows}
-            margin={{ top: 16, right: 24, bottom: 16, left: 0 }}
+            margin={{ top: 32, right: 24, bottom: 16, left: 0 }}
             accessibilityLayer
           >
             <CartesianGrid stroke="#edf0f3" vertical={false} />
@@ -104,6 +106,7 @@ export function ForecastChart({
               />
             ))}
             <ReferenceLine y={0} stroke="#c8a3a9" strokeDasharray="4 4" />
+            {deadlineDate && <ReferenceLine x={deadlineDate} stroke="#ad784a" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `Rent deadline · ${dateLabel(deadlineDate)}`, position: "insideTopRight", fill: "#8a5731", fontSize: 12 }}/>}
             <Tooltip
               cursor={{ stroke: "#cfd5de", strokeDasharray: "3 3" }}
               content={({ active, payload, label }) => {
@@ -154,6 +157,7 @@ export function ForecastChart({
               type="stepAfter"
               stroke="#24354d"
               strokeWidth={2}
+              strokeDasharray="5 4"
               dot={false}
               activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }}
               isAnimationActive={false}
@@ -163,9 +167,8 @@ export function ForecastChart({
                 dataKey="scenario"
                 name="With your changes"
                 type="stepAfter"
-                stroke="#7d3548"
-                strokeWidth={2}
-                strokeDasharray="5 3"
+                stroke="#800f1a"
+                strokeWidth={3}
                 dot={false}
                 activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }}
                 isAnimationActive={false}

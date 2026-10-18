@@ -25,6 +25,7 @@ import { affectedBalances, projectionSeries } from "@/lib/financial-view";
 import { ScenarioOptions } from "@/components/scenario-options";
 import { financialWarning } from "@/lib/financial-guidance";
 import { paymentReadiness } from "@/lib/planning-options";
+import { ScenarioComparison } from "@/components/scenario-comparison";
 const inputCents = (value: string) =>
   Math.max(0, Math.min(100000000, Math.round((Number(value) || 0) * 100)));
 export default function DominoPage() {
@@ -95,7 +96,7 @@ export default function DominoPage() {
     >
       <PlanFocus />
       <CollaborativeLink publish />
-      <MetricGrid
+      {risk ? <ScenarioComparison baseline={baseline} scenario={scenario} deadline={risk.date}/> : <MetricGrid
         items={[
           {
             label: rentBefore ? "Available for rent · original" : "Without changes",
@@ -127,7 +128,8 @@ export default function DominoPage() {
             tone: scenario.lowestBalanceCents < 0 ? "negative" : undefined,
           },
         ]}
-      />
+      />}
+      <ScenarioOptions />
       <div className="scenario-layout">
         <div className="section-stack">
           <Panel
@@ -154,6 +156,7 @@ export default function DominoPage() {
             <ForecastChart
               points={projectionSeries(baseline)}
               scenarioPoints={projectionSeries(scenario)}
+              deadlineDate={risk?.date}
               height={380}
             />
             <div className="forecast-caption">
@@ -444,7 +447,6 @@ export default function DominoPage() {
           </div>
         </Panel>
       </div>
-      <ScenarioOptions />
       <details className="secondary-details section-gap">
         <summary>Why did my outlook change?</summary>
         <ExplanationPanel scenario />

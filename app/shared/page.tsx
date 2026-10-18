@@ -96,6 +96,7 @@ function Shared({ profile }: { profile: string }) {
       {workspace ? (
         <>
           <Panel
+            className="household-header"
             title={workspace.name}
             description={`${workspace.kind} · ${workspace.members.map((id) => data.profiles.find((p) => p.id === id)?.name).join(", ")}`}
             action={
@@ -156,6 +157,7 @@ function Shared({ profile }: { profile: string }) {
             {workspace.commitments.length ? (
               workspace.commitments.map((c) => (
                 <Panel
+                  className="shared-obligation-panel"
                   key={c.id}
                   title={c.name}
                   description={`Due ${c.dueDate} · ${c.recurring ? "Monthly" : "One-time"} · next scheduled occurrence`}

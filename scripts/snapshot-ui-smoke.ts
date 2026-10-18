@@ -45,9 +45,12 @@ async function main() {
     await expect(page.getByRole("log")).toContainText("gym is respected");
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vesta.snapshot.v1")!).state.plans.kevin.simulation)).toEqual({});
     await page.screenshot({ path: join(directory, "kevin-assistant.png"), fullPage: true });
-    await page.getByRole("button", { name: "Confirm this what-if change", exact: true }).click();
+    await page.getByRole("link", { name: "Preview in Domino", exact: false }).click();
+    await expect(page.locator(".mini-metrics")).toBeVisible();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vesta.snapshot.v1")!).state.plans.kevin.simulation)).toEqual({});
+    await expect(page.getByRole("region", { name: "Scenario outcome comparison" })).toContainText("+$330.00");
+    await page.getByRole("button", { name: "Confirm and update my plan", exact: true }).click();
     await stored("kevin", "scenario");
-    await page.goto(base + "/domino");
     await page.getByText("Delay an expense, receive income later, or change a payment", { exact: true }).click();
     await expect(page.getByRole("spinbutton", { name: "Delay selected event in days" })).toHaveValue("6");
     await page.reload();

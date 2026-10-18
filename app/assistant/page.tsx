@@ -72,7 +72,7 @@ function Conversation({ profile }: { profile: string }) {
         <span className="eyebrow">YOUR FINANCES, IN CONTEXT</span>
         <h2>Your upcoming rent contribution may be at risk.</h2>
         <p>{formatCurrency(data.context.risk.availableCents || 0)} is estimated available for your {formatCurrency(data.context.risk.shareCents || 0)} share by {dateLabel(data.context.risk.date)}. Want to explore ways to cover the {formatCurrency(data.context.risk.shortfallCents)} difference?</p>
-        {data.context.preferences.map(p => <p className="subtext" key={p}>Fictional profile preference: {p} This is local context, not a claim of saved AI memory.</p>)}
+        {data.context.preferences.map(p => <p className="preference-chip" key={p}>Your demo preference: {p} Memory sharing is optional.</p>)}
       </section>}
       <Panel
         className="chat-panel"
@@ -153,8 +153,8 @@ function Conversation({ profile }: { profile: string }) {
                 ? "Confirmar el cambio hipotético"
                 : "Confirm this what-if change"}
             </Button>
-            <Link href="/plan?section=forecast" className="text-link">
-              {spanish ? "Ver el pronóstico" : "See it in Forecast"} →
+            <Link href="/plan?section=forecast" className="text-link" onClick={() => setSimulation(reply.proposal!.simulation)}>
+              {spanish ? "Vista previa en Domino" : "Preview in Domino"} →
             </Link>
           </div>
         )}

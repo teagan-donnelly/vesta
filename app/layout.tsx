@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import "./approved-theme.css";
+import "./demo-refinement.css";
 import { FinancialProvider } from "@/components/financial-provider";
 import { DisplayPreferenceEffect } from "@/components/personal-settings";
 
