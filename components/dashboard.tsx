@@ -104,8 +104,6 @@ export function Dashboard() {
           </section>
         ))}
       </div>
-      <HomeGroupHealth />
-      <FinancialRisk />
       <div className="overview-main">
         <Panel
           title="Financial overview"
@@ -336,6 +334,7 @@ export function Dashboard() {
           )}
         </Panel>
       </div>
+      <FinancialRisk />
       <div className="dashboard-links">
         <Link href="/shared">
           Shared Finances <ArrowRight size={16} />
@@ -374,6 +373,7 @@ export function Dashboard() {
           </p>
         )}
       </details>
+      <HomeGroupHealth />
     </AegisShell>
   );
 }

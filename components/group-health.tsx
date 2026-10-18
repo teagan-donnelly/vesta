@@ -4,8 +4,8 @@ import { useDemoPlanning, type PlanningPayload } from "./demo-planning";
 import { useFinancial } from "./financial-provider";
 import { Amount, Badge } from "./ui";
 import { dateLabel } from "./activity-table";
-export function GroupHealthCards({data}: {data:PlanningPayload}) {
-  return <section className="group-health" aria-label="Group Health"><div className="group-health-heading"><h2>Group Health</h2><p>Different commitments. Relationship-specific sharing.</p></div><div className="group-health-grid">{data.workspaces.map(w=> {
+export function GroupHealthCards({data, compact=false}: {data:PlanningPayload; compact?:boolean}) {
+  return <section className={`group-health${compact ? " group-health-compact" : ""}`} aria-label="Group Health"><div className="group-health-heading"><h2>Group Health</h2><p>Different commitments. Relationship-specific sharing.</p></div><div className="group-health-grid">{data.workspaces.map(w=> {
     const risk=w.commitments.some(c=>c.health === "At Risk"), known=w.commitments.every(c=>c.health === "On Track");
     return <article key={w.id} className={risk?"group-health-card at-risk":"group-health-card"}>
       <div className="group-health-title"><h3>{w.name}</h3><Badge tone={risk?"risk":"neutral"}>{risk?"At Risk":known?"On Track":"Not fully shared"}</Badge></div>
@@ -16,5 +16,5 @@ export function GroupHealthCards({data}: {data:PlanningPayload}) {
     </article>;
   })}</div></section>;
 }
-function PersonalGroupHealth({profile}:{profile:string}) {const {data,error}=useDemoPlanning(profile);return data?<GroupHealthCards data={data}/>:<p className="subtext">{error?"Group Health is unavailable; personal finances remain available.":"Loading group readiness…"}</p>;}
+function PersonalGroupHealth({profile}:{profile:string}) {const {data,error}=useDemoPlanning(profile);return data?<GroupHealthCards data={data} compact/>:<p className="subtext">{error?"Group Health is unavailable; personal finances remain available.":"Loading group readiness…"}</p>;}
 export function HomeGroupHealth() {const {mode,customer}=useFinancial();return mode==="demo"&&customer.startsWith("demo:")?<PersonalGroupHealth key={customer} profile={customer.slice(5)}/>:null;}
