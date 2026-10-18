@@ -1,5 +1,6 @@
 ﻿"use client";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AegisShell } from "@/components/aegis-shell";
 import {
@@ -15,6 +16,7 @@ import type { assistant } from "@/lib/collaboration/assistant";
 import { formatCurrency } from "@/lib/analysis";
 import { dateLabel } from "@/components/activity-table";
 import { AssistantMessage } from "@/components/assistant-message";
+import {readRiskDraft,RISK_DRAFT_KEY} from "@/lib/risk-draft";
 type Reply = Awaited<ReturnType<typeof assistant>>;
 export default function AssistantPage() {
   return (
@@ -23,21 +25,23 @@ export default function AssistantPage() {
       subtitle="Ask questions and explore options based on your financial outlook."
     >
       <DemoGate>
-        {(profile) => <Conversation key={profile} profile={profile} />}
+        {(profile) => <Suspense fallback={<LoadingState/>}><Conversation key={profile} profile={profile} /></Suspense>}
       </DemoGate>
     </AegisShell>
   );
 }
 function Conversation({ profile }: { profile: string }) {
+  const search=useSearchParams();
   const { data, error, busy, change } = useDemoPlanning(profile);
   const { setSimulation } = useFinancial();
   const [language, setLanguage] = useAssistantLanguage();
   const [reply, setReply] = useState<Reply | null>(null);
-  const [question, setQuestion] = useState("");
+  const [question, setQuestion] = useState(()=>readRiskDraft(profile,search));
   const [contextGroup] = useState(()=>typeof window!=="undefined" ? new URLSearchParams(window.location.search).get("workspace") : null);
   const [applied, setApplied] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
   const settings = useRef<HTMLDetailsElement>(null);
+  useEffect(()=>{try{const draft=JSON.parse(sessionStorage.getItem(RISK_DRAFT_KEY)||"null");if(draft?.profile===profile)sessionStorage.removeItem(RISK_DRAFT_KEY);}catch{/* No draft is required for ordinary navigation. */}},[profile]);
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "nearest", behavior: "auto" });
   }, [data?.own.messages.length, busy]);
