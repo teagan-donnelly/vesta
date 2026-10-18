@@ -86,3 +86,15 @@ The future PostgreSQL adapter is retained in
 helpers and database tests. `pg` is development-only. Database scripts are named
 `db:migrate:archived` and `verify:tiger:archived`; neither is used by the app or
 build. Do not run them as part of the hackathon demo.
+
+## Verified rollout
+
+The implementation passed 81 automated tests, lint, TypeScript, the production
+build and secret scanning. Chrome verified the management forms and layouts at
+desktop, tablet and mobile sizes. The complete Kevin → Domino → Shared Finances
+→ Ava flow, refresh persistence, readiness-only disclosure, revocation, all three
+profiles' credit records and Reset Demo passed on both the local production build
+and `https://vesta-seven-phi.vercel.app`. The opted-in Backboard proposal flow also
+passed on both environments and its test assistants were cleared. Live read-only
+Nessie retrieval and Gemini explanations succeeded locally; no Nessie or Tiger
+records were created, modified or deleted.

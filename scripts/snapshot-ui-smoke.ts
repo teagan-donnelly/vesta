@@ -78,7 +78,12 @@ async function main() {
     await expect(page.getByText("Tiger Data:", { exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: "Reset Demo", exact: true }).click();
     await page.getByRole("button", { name: "Confirm Reset Demo", exact: true }).click();
-    await stored("kevin", "ready");
+    // The confirmed reset waits for queued writes before reloading. On hosted
+    // latency the old envelope can still exist when the click resolves.
+    await page.waitForFunction(() => {
+      const value = JSON.parse(localStorage.getItem("vesta.snapshot.v1") || "null");
+      return value?.state?.plans?.kevin && Object.keys(value.state.plans.kevin.simulation).length === 0;
+    });
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vesta.snapshot.v1")!).state.plans.kevin.simulation)).toEqual({});
     await switchTo("kevin");
     await page.goto(base + "/domino");
