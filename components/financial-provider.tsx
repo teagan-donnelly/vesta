@@ -5,6 +5,7 @@ import {
   useEffect,
   useState,
   useRef,
+  useMemo,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
@@ -19,8 +20,15 @@ import type { DataSource, FinancialData, Simulation } from "@/lib/types";
 import { Button, Notice, EmptyState, LoadingState } from "./ui";
 import Link from "next/link";
 import { ensureDemoSession } from "@/lib/demo-session-client";
+import { applyPersonalRecords, type PersonalRecord } from "@/lib/management";
 
 type State = {
+  records: PersonalRecord[];
+  recordsStorage: string;
+  recordsError: string;
+  recordsReady: boolean;
+  saveRecord: (record: PersonalRecord) => Promise<void>;
+  deleteRecord: (id: string) => Promise<void>;
   mode: DataSource;
   setMode: (mode: DataSource) => void;
   data: FinancialData | null;
@@ -41,6 +49,95 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     serverProfileSnapshot,
   );
   const { mode, customer } = parseProfile(preferences);
+  const [recordState, setRecordState] = useState<{
+    profile: string;
+    records: PersonalRecord[];
+    storage: string;
+    error: string;
+    ready: boolean;
+  }>({ profile: "", records: [], storage: "", error: "", ready: false });
+  const activeProfile = useRef(preferences);
+  const recordRevision = useRef(0);
+  const recordQueue = useRef(Promise.resolve());
+  const records = useMemo(
+    () => (recordState.profile === preferences ? recordState.records : []),
+    [recordState, preferences],
+  );
+  useEffect(() => {
+    activeProfile.current = preferences;
+    const controller = new AbortController();
+    const revision = recordRevision.current;
+    if (mode === "nessie" && !customer) return () => controller.abort();
+    void ensureDemoSession()
+      .then(() =>
+        fetch(
+          `/api/records?mode=${mode}&customer=${encodeURIComponent(customer)}`,
+          { cache: "no-store", signal: controller.signal },
+        ),
+      )
+      .then(async (response) => {
+        if (!response.ok)
+          throw Error(
+            "Personal planning storage unavailable. Select storage in Settings.",
+          );
+        return response.json();
+      })
+      .then((value) => {
+        if (!controller.signal.aborted && recordRevision.current === revision)
+          setRecordState({
+            profile: preferences,
+            records: value.records,
+            storage: value.storage,
+            error: "",
+            ready: true,
+          });
+      })
+      .catch(() => {
+        if (!controller.signal.aborted && recordRevision.current === revision)
+          setRecordState({
+            profile: preferences,
+            records: [],
+            storage: "",
+            error:
+              "Personal planning storage is unavailable. Existing bank data remains available; manually tracked items may be missing.",
+            ready: false,
+          });
+      });
+    return () => {
+      controller.abort();
+      activeProfile.current = "";
+    };
+  }, [preferences, mode, customer]);
+  async function changeRecord(body: object) {
+    const task = recordQueue.current
+      .catch(() => {})
+      .then(async () => {
+        if (activeProfile.current !== preferences)
+          throw Error("Profile changed. Retry in the intended profile.");
+        const response = await fetch(
+          `/api/records?mode=${mode}&customer=${encodeURIComponent(customer)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...body, confirmed: true }),
+          },
+        );
+        const value = await response.json();
+        if (!response.ok) throw Error(value.error || "Record was not saved.");
+        if (activeProfile.current === preferences) {
+          recordRevision.current++;
+          setRecordState({
+            profile: preferences,
+            records: value.records,
+            storage: value.storage,
+            error: "",
+            ready: true,
+          });
+        }
+      });
+    recordQueue.current = task;
+    await task;
+  }
   const [data, setData] = useState<FinancialData | null>(null);
   const [dataProfile, setDataProfile] = useState("");
   const [error, setError] = useState("");
@@ -60,6 +157,13 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
   };
   const visibleData =
     dataProfile === preferences && data?.source === mode ? data : null;
+  const composed = useMemo(
+    () =>
+      visibleData && recordState.profile === preferences && recordState.ready
+        ? applyPersonalRecords(visibleData, records)
+        : visibleData,
+    [visibleData, records, recordState.profile, recordState.ready, preferences],
+  );
   const visibleError = errorProfile === preferences ? error : "";
   useEffect(() => {
     const controller = new AbortController();
@@ -103,9 +207,13 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
           void ensureDemoSession()
             .then(() => {
               if (controller.signal.aborted) return null;
-              return fetch(`/api/personal-planning?profile=${encodeURIComponent(customer.slice(5))}`, {
-                signal: controller.signal, cache: "no-store",
-              });
+              return fetch(
+                `/api/personal-planning?profile=${encodeURIComponent(customer.slice(5))}`,
+                {
+                  signal: controller.signal,
+                  cache: "no-store",
+                },
+              );
             })
             .then(async (response) => {
               if (!response || !response.ok) return;
@@ -113,9 +221,14 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
               if (controller.signal.aborted) return;
               setData(enriched);
               if (draftRevision.current === revision)
-                setScenarioState({ profile: JSON.stringify({ mode, customer }), value: enriched.planningSimulation || {} });
+                setScenarioState({
+                  profile: JSON.stringify({ mode, customer }),
+                  value: enriched.planningSimulation || {},
+                });
             })
-            .catch(() => { /* Keep the labeled personal-only snapshot. */ });
+            .catch(() => {
+              /* Keep the labeled personal-only snapshot. */
+            });
         }
         if (mode === "nessie" && !customer) {
           if (resolvedCustomer)
@@ -158,9 +271,17 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
   return (
     <Context.Provider
       value={{
+        records,
+        recordsStorage:
+          recordState.profile === preferences ? recordState.storage : "",
+        recordsError:
+          recordState.profile === preferences ? recordState.error : "",
+        recordsReady: recordState.profile === preferences && recordState.ready,
+        saveRecord: (record) => changeRecord({ action: "save", record }),
+        deleteRecord: (id) => changeRecord({ action: "delete", id }),
         mode,
         setMode,
-        data: visibleData,
+        data: composed,
         error: visibleError,
         loading: loading || (!visibleData && !visibleError),
         customer,
@@ -234,9 +355,16 @@ export function DataStatus() {
           </Notice>
         </div>
       )}
-      {data?.warnings.some((w) => w.startsWith("Shared planning is not included")) && (
+      {data?.warnings.some((w) =>
+        w.startsWith("Shared planning is not included"),
+      ) && (
         <Notice tone="caution">
-          <p>Personal balances and activity are available. Shared obligations and saved scenarios are not included yet; forecasts are incomplete. <Link href="/shared">Open Shared Finances</Link> to retry or explicitly choose local fictional planning.</p>
+          <p>
+            Personal balances and activity are available. Shared obligations and
+            saved scenarios are not included yet; forecasts are incomplete.{" "}
+            <Link href="/shared">Open Shared Finances</Link> to retry or
+            explicitly choose local fictional planning.
+          </p>
         </Notice>
       )}
       {data?.warnings.some((w) => /pending|Loans are displayed/i.test(w)) && (

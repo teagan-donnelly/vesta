@@ -1,4 +1,7 @@
 import type { CashFlowProjection, Subscription } from "./types";
+export function annualSubscriptionCost(subscriptions: Subscription[]) {
+  return subscriptions.reduce((sum, subscription) => sum + subscription.amountCents * (subscription.cadence === "weekly" ? 52 : subscription.cadence === "annual" ? 1 : 12), 0);
+}
 export function monthlySubscriptionCost(subscriptions: Subscription[]) {
   return subscriptions.reduce(
     (sum, s) =>

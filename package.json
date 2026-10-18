@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --test tests/*.test.ts",
+    "test:ui": "tsx scripts/ui-smoke.ts",
     "verify:integrations": "tsx scripts/verify-integrations.ts",
     "inspect:sandbox": "tsx scripts/inspect-sandbox.ts",
     "db:migrate": "tsx scripts/migrate-planning.ts",
@@ -25,6 +26,7 @@
     "recharts": "^3.10.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/turbopack": "^4",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^20",

@@ -3,7 +3,14 @@ import { useState } from "react";
 import { Badge, Button, EmptyState } from "./ui";
 import { formatCurrency, classify } from "@/lib/analysis";
 import type { FinancialData } from "@/lib/types";
+import { readDisplay } from "@/lib/display-preferences";
 export function dateLabel(value: string, year = false) {
+  const format = readDisplay().dateFormat;
+  if (format === "ISO") return value;
+  if (format === "MM/DD/YYYY")
+    return `${value.slice(5, 7)}/${value.slice(8)}/${value.slice(0, 4)}`;
+  if (format === "DD/MM/YYYY")
+    return `${value.slice(8)}/${value.slice(5, 7)}/${value.slice(0, 4)}`;
   const date = new Date(value + "T00:00:00Z");
   return Number.isFinite(date.getTime())
     ? new Intl.DateTimeFormat("en-US", {
@@ -94,9 +101,11 @@ export function ActivityTable({
                       {t.merchant || "Description not provided"}
                     </strong>
                     <span className="subtext">
-                      {data.source === "nessie"
-                        ? `Nessie ${t.recordType || "record"}`
-                        : t.description}
+                      {t.provenance === "manual"
+                        ? "Manual Vesta entry · not a bank record"
+                        : data.source === "nessie"
+                          ? `Nessie ${t.recordType || "record"}`
+                          : t.description}
                       {t.pending ? " · Pending" : ""}
                     </span>
                   </td>

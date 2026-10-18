@@ -17,7 +17,13 @@ import { DataStatus, useFinancial } from "./financial-provider";
 import { Button } from "./ui";
 import { ProfileMenu } from "./profile-menu";
 import { PlanNavigation } from "./plan-navigation";
-import { mainDestinations, destinationFor, sectionFor } from "@/lib/navigation";
+import { GlobalSearch, FinancialNotifications } from "./global-search";
+import {
+  mainDestinations,
+  destinationFor,
+  sectionFor,
+  planningSections,
+} from "@/lib/navigation";
 const icons = [WalletCards, Files, ChartNoAxesCombined, ShieldCheck];
 const navItems = mainDestinations.map((item, i) => ({
   ...item,
@@ -62,7 +68,8 @@ export function AegisShell({
     pathname === "/"
       ? "Home"
       : destination?.href === "/plan"
-        ? "Plan Ahead"
+        ? planningSections.find((section) => section.id === planSection)
+            ?.label || "Plan Ahead"
         : pathname === "/shared"
           ? "Shared Finances"
           : pathname === "/deadbolt"
@@ -136,7 +143,7 @@ export function AegisShell({
             <X size={18} />
           </button>
         </div>
-        <p className="nav-label">YOUR WORKSPACE</p>
+        <p className="nav-label">YOUR FINANCIAL LIFE</p>
         <nav aria-label="Main navigation">
           {navItems.map(({ href, label, icon: Icon }) => (
             <Link
@@ -151,6 +158,27 @@ export function AegisShell({
             </Link>
           ))}
         </nav>
+        <div className="sidebar-promise">
+          <span>
+            Plan.
+            <br />
+            Protect.
+            <br />
+            Grow.
+          </span>
+          <p>
+            Your financial future,
+            <br />
+            protected.
+          </p>
+          <Image
+            src="/brand/vesta-goddess.png"
+            width={240}
+            height={120}
+            alt=""
+            unoptimized
+          />
+        </div>
         <div className="sidebar-bottom">
           <div className="avatar" aria-hidden="true">
             {name
@@ -185,7 +213,9 @@ export function AegisShell({
             <ChevronRight size={13} aria-hidden="true" />
             <strong>{displayTitle}</strong>
           </div>
+          <GlobalSearch />
           <div className="workspace-controls">
+            <FinancialNotifications />
             <details className="source-disclosure">
               <summary className="source-indicator">
                 {mode === "nessie" ? "Nessie sandbox" : "Demo data"}
@@ -210,7 +240,9 @@ export function AegisShell({
           </div>
         </header>
         <main id="main-content" className="page-content" tabIndex={-1}>
-          <header className="page-heading">
+          <header
+            className={`page-heading ${pathname === "/" ? "home-page-heading" : ""}`}
+          >
             <div>
               <div className="eyebrow">
                 {destination?.href === "/shared"

@@ -31,11 +31,13 @@ export default function SharedPage() {
       title="Shared Finances"
       subtitle="Plan expenses together without sharing your entire financial life."
     >
-      <Suspense fallback={<LoadingState />}>
-        <DemoGate>
-          {(profile) => <Shared key={profile} profile={profile} />}
-        </DemoGate>
-      </Suspense>
+      <DemoGate>
+        {(profile) => (
+          <Suspense key={profile} fallback={<LoadingState />}>
+            <Shared profile={profile} />
+          </Suspense>
+        )}
+      </DemoGate>
     </AegisShell>
   );
 }

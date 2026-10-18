@@ -1,6 +1,8 @@
 export type DataSource = "demo" | "nessie";
 
 export interface FinancialData {
+  manualSubscriptions?: Subscription[];
+  canceledSubscriptionIds?: string[];
   source: DataSource;
   asOf: string;
   customers: Customer[];
@@ -54,6 +56,9 @@ export interface Account {
 }
 
 export interface Transaction {
+  originalCategory?: string;
+  originalDescription?: string;
+  provenance?: "manual";
   id: string;
   date: string;
   merchant: string;
@@ -85,7 +90,7 @@ export interface Subscription {
   lastChargeDate: string;
   nextChargeDate: string;
   confidence:
-    "Confirmed recurring" | "Likely recurring" | "Insufficient evidence";
+    "Confirmed recurring" | "Likely recurring" | "Insufficient evidence" | "Manually tracked";
   status: "essential" | "review" | "simulate-cancel" | "active";
 }
 

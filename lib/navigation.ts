@@ -1,5 +1,5 @@
 export const mainDestinations = [
-  { href: "/", label: "Home", paths: ["/", "/continuity"] },
+  { href: "/", label: "Home", paths: ["/", "/continuity", "/transactions"] },
   {
     href: "/shared",
     label: "Shared Finances",
@@ -16,10 +16,14 @@ export const planningSections = [
   { id: "forecast", label: "Forecast", href: "/plan?section=forecast" },
   {
     id: "spending",
-    label: "Spending & Subscriptions",
+    label: "Subscriptions",
     href: "/plan?section=spending",
   },
-  { id: "credit", label: "Credit Guidance", href: "/plan?section=credit" },
+  { id: "goals", label: "Goals", href: "/plan?section=goals" },
+  { id: "budget", label: "Budget", href: "/plan?section=budget" },
+  { id: "credit", label: "Credit", href: "/plan?section=credit" },
+  { id: "investing", label: "Investing", href: "/plan?section=investing" },
+  { id: "protection", label: "Protection", href: "/plan?section=protection" },
 ] as const;
 export function destinationFor(path: string) {
   return mainDestinations.find((item) =>

@@ -99,7 +99,7 @@ function advance(
   return shift(date, cadence === "weekly" ? 7 : 14);
 }
 export function subscriptionsFor(data: FinancialData): Subscription[] {
-  return groups(data).flatMap((items) => {
+  const detected = groups(data).flatMap((items) => {
     const cadence = recurrence(items);
     const last = items.at(-1)!;
     if (classify(last) !== "subscription" || !cadence || cadence === "biweekly")
@@ -121,6 +121,20 @@ export function subscriptionsFor(data: FinancialData): Subscription[] {
       } as Subscription,
     ];
   });
+  const manual = (data.manualSubscriptions || []).map((subscription) => {
+    let next = subscription.nextChargeDate;
+    while (next <= data.asOf)
+      next = advance(
+        next,
+        subscription.cadence,
+        Number(subscription.nextChargeDate.slice(8)),
+      );
+    return { ...subscription, nextChargeDate: next };
+  });
+  return [
+    ...detected.filter((s) => !manual.some((m) => m.id === s.id)),
+    ...manual,
+  ].filter((s) => !data.canceledSubscriptionIds?.includes(s.id));
 }
 export function alertsFor(data: FinancialData) {
   return data.transactions
@@ -257,6 +271,13 @@ export function forecastEvents(data: FinancialData): ForecastEvent[] {
     const last = items.at(-1)!;
     const cadence = recurrence(items);
     const kind = classify(last);
+    const subscriptionId = `${last.accountId}:${key(last.merchant)}`;
+    if (
+      kind === "subscription" &&
+      (data.canceledSubscriptionIds?.includes(subscriptionId) ||
+        data.manualSubscriptions?.some((s) => s.id === subscriptionId))
+    )
+      continue;
     if (
       !cashIds.has(last.accountId) ||
       !cadence ||
@@ -294,6 +315,37 @@ export function forecastEvents(data: FinancialData): ForecastEvent[] {
         existing.accountId = last.accountId;
       }
       date = advance(date, cadence, Number(last.date.slice(8)));
+    }
+  }
+  for (const s of data.manualSubscriptions || []) {
+    if (data.canceledSubscriptionIds?.includes(s.id)) continue;
+    const separator = s.id.indexOf(":");
+    const accountId = s.id.slice(0, separator),
+      merchantKey = s.id.slice(separator + 1);
+    if (!cashIds.has(accountId)) continue;
+    let date = s.nextChargeDate;
+    while (date <= data.asOf)
+      date = advance(date, s.cadence, Number(s.nextChargeDate.slice(8)));
+    while (date <= end) {
+      if (
+        !events.some(
+          (e) =>
+            e.accountId === accountId &&
+            e.date === date &&
+            (e.merchantKey === merchantKey ||
+              e.merchantKey === key(s.merchant)),
+        )
+      )
+        events.push({
+          id: `tracked:${s.id}:${date}`,
+          date,
+          amountCents: -s.amountCents,
+          label: s.merchant,
+          kind: "subscription",
+          merchantKey,
+          accountId,
+        });
+      date = advance(date, s.cadence, Number(s.nextChargeDate.slice(8)));
     }
   }
   return events.sort((a, b) => a.date.localeCompare(b.date));

@@ -2,8 +2,14 @@ import { demoData } from "@/lib/data";
 import { loadNessie } from "@/lib/nessie";
 import { explain } from "@/lib/explanations";
 import type { Simulation } from "@/lib/types";
+import { applyPersonalRecords } from "@/lib/management";
+import { personalRecords } from "@/lib/collaboration/records";
 import { isIsoDate, todayIso } from "@/lib/analysis";
-import { fixtureData, personalData, profileId } from "@/lib/collaboration/model";
+import {
+  fixtureData,
+  personalData,
+  profileId,
+} from "@/lib/collaboration/model";
 import {
   demoSession,
   localPlanning,
@@ -19,7 +25,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     if (!["demo", "nessie"].includes(body.mode))
       return Response.json({ error: "Invalid mode." }, { status: 400 });
-    const data =
+    let data =
       body.mode === "nessie"
         ? await loadNessie(
             typeof body.customer === "string" ? body.customer : undefined,
@@ -27,17 +33,46 @@ export async function POST(request: Request) {
         : typeof body.customer === "string" && body.customer.startsWith("demo:")
           ? body.personalOnly === true
             ? (() => {
-                const snapshot = fixtureData(profileId(body.customer.slice(5)), todayIso());
-                snapshot.warnings.push("Shared planning is not included; the forecast excludes shared obligations and saved scenarios.");
+                const snapshot = fixtureData(
+                  profileId(body.customer.slice(5)),
+                  todayIso(),
+                );
+                snapshot.warnings.push(
+                  "Shared planning is not included; the forecast excludes shared obligations and saved scenarios.",
+                );
                 return snapshot;
               })()
             : await withDemo(
-              demoSession(request).id,
-              (s) => personalData(s, profileId(body.customer.slice(5))),
-              false,
-              localPlanning(request),
-            )
+                demoSession(request).id,
+                (s) => personalData(s, profileId(body.customer.slice(5))),
+                false,
+                localPlanning(request),
+              )
           : demoData();
+    if (
+      body.mode === "nessie" ||
+      !body.customer ||
+      body.personalOnly === true
+    ) {
+      try {
+        const records = await withDemo(
+          demoSession(request).id,
+          (state) =>
+            personalRecords(
+              state,
+              body.mode,
+              typeof body.customer === "string" ? body.customer : "",
+            ).records,
+          false,
+          localPlanning(request),
+        );
+        data = applyPersonalRecords(data, records);
+      } catch {
+        data.warnings.push(
+          "Personal planning storage is unavailable; manually tracked records may be missing.",
+        );
+      }
+    }
     const raw = body.simulation || {};
     const simulation: Simulation = {};
     if (Array.isArray(raw.removedSubscriptions))

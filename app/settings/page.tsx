@@ -2,6 +2,7 @@
 import { DataSettings } from "@/components/data-settings";
 import { LocalSandboxSetup } from "@/components/local-sandbox-setup";
 import { PlanningSettings } from "@/components/planning-settings";
+import { PersonalSettings } from "@/components/personal-settings";
 export default function SettingsPage() {
   const setupAvailable =
     process.env.NODE_ENV !== "production" && !process.env.VERCEL;
@@ -10,7 +11,10 @@ export default function SettingsPage() {
       title="Settings"
       subtitle="Manage your data source, privacy, and financial workspace."
     >
-      <PlanningSettings />
+      <PersonalSettings />
+      <div className="section-gap">
+        <PlanningSettings />
+      </div>
       <details className="secondary-details section-gap" id="diagnostics">
         <summary>Financial data, connections & developer diagnostics</summary>
         <DataSettings />

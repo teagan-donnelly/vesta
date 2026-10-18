@@ -4,9 +4,22 @@ import Spending from "../protect/page";
 import Credit from "../credit/page";
 import { AegisShell } from "@/components/aegis-shell";
 import { LoadingState } from "@/components/ui";
+import { ManagementPage } from "@/components/planning-workbench";
 type Props = { searchParams: Promise<{ section?: string }> };
 async function Content({ searchParams }: Props) {
   const { section } = await searchParams;
+  if (
+    ["goals", "budget", "credit", "investing", "protection"].includes(
+      section || "",
+    )
+  )
+    return (
+      <ManagementPage
+        section={
+          section as "goals" | "budget" | "credit" | "investing" | "protection"
+        }
+      />
+    );
   return section === "spending" ? (
     <Spending />
   ) : section === "credit" ? (

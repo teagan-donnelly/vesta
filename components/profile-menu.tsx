@@ -29,6 +29,13 @@ export function ProfileMenu({ name }: { name: string }) {
       }}
     >
       <summary aria-label={`Profile and settings: ${name}`}>
+        <span className="profile-initials" aria-hidden="true">
+          {name
+            .split(" ")
+            .slice(0, 2)
+            .map((part) => part[0])
+            .join("")}
+        </span>
         <span className="profile-name">{name}</span>
         <Settings2 size={19} aria-hidden="true" />
       </summary>

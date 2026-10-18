@@ -1,4 +1,5 @@
 import type { FinancialData, Simulation } from "../types";
+import { applyPersonalRecords, type PersonalRecord } from "../management";
 import {
   forecastEvents,
   isIsoDate,
@@ -36,6 +37,7 @@ export type Commitment = {
   }[];
 };
 export type PrivatePlan = {
+  recordSets?: Record<string, PersonalRecord[]>;
   simulation: Simulation;
   memoryOptIn: boolean;
   preferences: string[];
@@ -236,7 +238,7 @@ export function fixtureData(profile: ProfileId, asOf: string): FinancialData {
   return data;
 }
 export function personalData(s: DemoState, profile: ProfileId) {
-  const data = fixtureData(profile, s.asOf);
+  const data = applyPersonalRecords(fixtureData(profile, s.asOf), s.plans[profile].recordSets?.[`demo:demo:${profile}`] || []);
   for (const c of s.commitments) {
     const assignment = c.contributions.find((a) => a.profile === profile);
     if (!assignment) continue;
