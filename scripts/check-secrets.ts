@@ -46,7 +46,14 @@ for (const path of staged) {
     )
   )
     throw new Error("Generated or private file is staged.");
-  assertNoKey(execFileSync("git", ["show", `:${path}`]));
+  let contents: Buffer;
+  try {
+    // Scan image assets too; Node's 1 MiB default truncates normal hero PNGs.
+    contents = execFileSync("git", ["show", `:${path}`], { maxBuffer: 16 * 1024 * 1024 });
+  } catch {
+    throw new Error("Unable to read a staged file for secret scanning; contents suppressed.");
+  }
+  assertNoKey(contents);
 }
 if (existsSync(".next/static")) scan(".next/static");
 execFileSync("git", ["check-ignore", ".env.local"], { stdio: "ignore" });

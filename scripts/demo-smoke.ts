@@ -105,7 +105,7 @@ async function main() {
   assert.match(kevin.assistant.reply, /gym/);
   kevin = await api("kevin", {
     action: "chat",
-    question: "What happens if I cancel Spotify?",
+    question: "What could I change before rent while keeping my gym?",
     language: "en",
   });
   assert.ok(kevin.assistant.proposal);

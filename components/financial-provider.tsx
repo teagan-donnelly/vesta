@@ -375,7 +375,7 @@ export function DataStatus() {
           </p>
         </Notice>
       )}
-      {data?.warnings.some((w) => /pending|Loans are displayed/i.test(w)) && (
+      {data?.warnings.some((w) => /\bpending\b|Loans are displayed/i.test(w)) && (
         <Notice tone="caution">
           <p>
             Some activity is excluded from this cash forecast.{" "}

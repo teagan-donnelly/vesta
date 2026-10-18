@@ -31,18 +31,18 @@ test("due-date readiness, integer cents, baseline and subscription simulation pr
   const base = project(data);
   const spotify = subscriptionsFor(data).find((s) => s.merchant === "Spotify")!;
   assert.equal(data.bills.filter((b) => b.id === "shared-rent").length, 1);
-  assert.equal(base.lowestBalanceCents, -1000);
+  assert.equal(base.lowestBalanceCents, -20000);
   assert.equal(
     coverage(s, "kevin").get(`rent:${s.commitments[0].dueDate}`)?.coveredCents,
-    99000,
+    80000,
   );
   s.plans.kevin.simulation = { removedSubscriptions: [spotify.id] };
   assert.equal(
     coverage(s, "kevin", true).get(`rent:${s.commitments[0].dueDate}`)
       ?.coveredCents,
-    100000,
+    81500,
   );
-  assert.equal(project(data, s.plans.kevin.simulation).lowestBalanceCents, 500);
+  assert.equal(project(data, s.plans.kevin.simulation).lowestBalanceCents, -18500);
   assert.deepEqual(project(data), base);
   assert.equal(
     coverage(s, "ava").get(`rent:${s.commitments[0].dueDate}`)?.status,
@@ -67,7 +67,7 @@ test("same-day assignments cannot spend the same projected money twice", () => {
   const results = [...coverage(s, "kevin").values()];
   assert.equal(
     results.reduce((n, r) => n + r.coveredCents, 0),
-    99000,
+    80000,
   );
 });
 test("delayed income and unexpected expenses affect commitments by their actual deadlines", () => {
@@ -75,13 +75,13 @@ test("delayed income and unexpected expenses affect commitments by their actual 
   s.commitments[0].dueDate = "2026-11-02";
   const baseline = coverage(s, "kevin").get("rent:2026-11-02")!;
   assert.equal(baseline.status, "appears achievable");
-  s.plans.kevin.simulation = { eventId: "pending:income-14", delayDays: 10 };
+  s.plans.kevin.simulation = { eventId: "pending:income-0", delayDays: 10 };
   assert.equal(
     coverage(s, "kevin", true).get("rent:2026-11-02")?.status,
     "may be at risk",
   );
   s.plans.kevin.simulation = {
-    unexpectedCents: 200000,
+    unexpectedCents: 250000,
     unexpectedDate: "2026-10-24",
   };
   assert.equal(
@@ -117,8 +117,8 @@ test("minimal disclosure suppresses amounts, aggregates, balances and private hi
     expenseIds: [personalData(s, "kevin").transactions[0].id],
   };
   view = workspaceView(s, "household", "ava");
-  assert.equal(view.commitments[0].projectedCents, 199000);
-  assert.equal(view.commitments[0].shortfallCents, 1000);
+  assert.equal(view.commitments[0].projectedCents, 180000);
+  assert.equal(view.commitments[0].shortfallCents, 20000);
   s.consents["household:kevin"] = consentDefault();
   view = workspaceView(s, "household", "ava");
   assert.equal(view.commitments[0].projectedCents, null);
@@ -311,8 +311,8 @@ test("private AI memory and conversation remain isolated; proposals require sepa
   });
   assert.equal(result.value.assistant.source, "deterministic");
   assert.match(result.value.assistant.reply, /Simular/);
-  assert.equal(result.value.assistant.proposal.beforeCents, -1000);
-  assert.equal(result.value.assistant.proposal.afterCents, 500);
+  assert.equal(result.value.assistant.proposal.beforeCents, -20000);
+  assert.equal(result.value.assistant.proposal.afterCents, -18500);
   assert.deepEqual(result.value.own.simulation, {});
   await action("kevin", id, {
     action: "scenario",

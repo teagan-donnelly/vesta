@@ -20,5 +20,9 @@ export function snapshotRecords(profile: string, asOf: string): PersonalRecord[]
     records.push({ id: `${profile}-payment-${month}`, kind: "payment", label: "Fictional everyday card", referenceId: `${profile}-credit`, paymentStatus: "On time", date });
     records.push({ id: `${profile}-valuation-${month}`, kind: "valuation", label: "Fictional broad market fund", referenceId: `${profile}-index`, amountCents: [12, 4, 18][index] * (9900 + (month - 7) * 200), date });
   }
+  records.push(
+    { id: `${profile}-restaurants-budget`, kind: "budget", label: "Dining with intention", category: "Restaurants", amountCents: [22000, 16000, 25000][index], date: asOf },
+    { id: `${profile}-transport-budget`, kind: "budget", label: "Getting around", category: "Transport", amountCents: [14000, 12000, 9000][index], date: asOf },
+  );
   return records;
 }

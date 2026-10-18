@@ -22,6 +22,9 @@ import {
   isIsoDate,
 } from "@/lib/analysis";
 import { affectedBalances, projectionSeries } from "@/lib/financial-view";
+import { ScenarioOptions } from "@/components/scenario-options";
+import { financialWarning } from "@/lib/financial-guidance";
+import { paymentReadiness } from "@/lib/planning-options";
 const inputCents = (value: string) =>
   Math.max(0, Math.min(100000000, Math.round((Number(value) || 0) * 100)));
 export default function DominoPage() {
@@ -46,6 +49,10 @@ export default function DominoPage() {
   const target = events.find((e) => e.id === simulation.eventId);
   const changed = affectedBalances(baseline, scenario);
   const difference = scenario.endingBalanceCents - baseline.endingBalanceCents;
+  const risk = financialWarning(data);
+  const rentEvent = risk?.commitment ? `bill:shared-${risk.commitment}` : "";
+  const rentBefore = paymentReadiness(data, rentEvent);
+  const rentAfter = paymentReadiness(data, rentEvent, simulation);
   const rows = baseline.points
     .map((point, index) => ({
       date: point.date,
@@ -91,23 +98,23 @@ export default function DominoPage() {
       <MetricGrid
         items={[
           {
-            label: "Without changes",
-            value: <Amount cents={baseline.endingBalanceCents} />,
-            note: dateLabel(baseline.endDate, true),
+            label: rentBefore ? "Available for rent · original" : "Without changes",
+            value: <Amount cents={rentBefore?.coveredCents ?? baseline.endingBalanceCents} />,
+            note: dateLabel(rentBefore?.event.date || baseline.endDate, true),
           },
           {
-            label: "With your changes",
-            value: <Amount cents={scenario.endingBalanceCents} />,
-            note: "Your selected changes only",
+            label: rentAfter ? "Available for rent · with changes" : "With your changes",
+            value: <Amount cents={rentAfter?.coveredCents ?? scenario.endingBalanceCents} />,
+            note: rentAfter ? `Toward your ${formatCurrency(-rentAfter.event.amountCents)} share` : "Your selected changes only",
           },
           {
-            label: "Difference after your changes",
-            value: <Amount cents={difference} signed />,
-            note: changed.length
+            label: rentAfter ? "Remaining rent gap" : "Difference after your changes",
+            value: <Amount cents={rentAfter?.shortfallCents ?? difference} signed={!rentAfter} />,
+            note: rentAfter ? "Hypothetical estimate, not reserved funds" : changed.length
               ? `${changed.length} dates affected`
               : "No changes selected",
             tone:
-              difference > 0
+              rentAfter ? rentAfter.shortfallCents === 0 ? "positive" : "negative" : difference > 0
                 ? "positive"
                 : difference < 0
                   ? "negative"
@@ -437,6 +444,7 @@ export default function DominoPage() {
           </div>
         </Panel>
       </div>
+      <ScenarioOptions />
       <details className="secondary-details section-gap">
         <summary>Why did my outlook change?</summary>
         <ExplanationPanel scenario />

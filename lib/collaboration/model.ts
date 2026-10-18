@@ -1,3 +1,4 @@
+import { financialSnapshot } from "./financial-snapshot";
 import { snapshotRecords } from "./snapshot-records";
 import type { FinancialData, Simulation } from "../types";
 import { applyPersonalRecords, type PersonalRecord } from "../management";
@@ -46,6 +47,7 @@ export type PrivatePlan = {
   messages: { role: "user" | "assistant"; content: string }[];
 };
 export type DemoState = {
+  snapshotRevision?: number;
   asOf: string;
   workspaces: {
     id: string;
@@ -86,6 +88,7 @@ export const SNAPSHOT_AT = "2026-10-17T12:00:00.000Z";
 export const SNAPSHOT_DATE = SNAPSHOT_AT.slice(0, 10);
 export function initialState(asOf = SNAPSHOT_DATE): DemoState {
   return {
+    snapshotRevision: 2,
     asOf,
     workspaces: [
       {
@@ -154,115 +157,7 @@ export function consentFor(
 ) {
   return s.consents[`${workspaceId}:${member}`] || consentDefault();
 }
-export function fixtureData(profile: ProfileId, asOf: string): FinancialData {
-  const accountId = `fictional-${profile}`;
-  const data: FinancialData = {
-    source: "demo",
-    asOf,
-    customers: [
-      {
-        id: profile,
-        name: profiles.find((p) => p.id === profile)!.name,
-        location: "Fictional",
-        household: "Demo",
-        incomeCents: profile === "kevin" ? 360000 : profile === "ava" ? 480000 : 420000,
-        monthlyBudgetCents: profile === "kevin" ? 220000 : 280000,
-      },
-    ],
-    accounts: [
-      {
-        id: accountId,
-        customerId: profile,
-        name: "Fictional checking",
-        type: "Checking",
-        balanceCents: profile === "kevin" ? 128000 : profile === "ava" ? 300000 : 245000,
-        institution: "Local fictional fixture — not Nessie",
-      },
-    ],
-    transactions: [],
-    bills: [],
-    loans: [],
-    warnings: [
-      "Fictional collaborative demo. No authentication or actual payments. Income and recurring spending are estimates, never guaranteed.",
-    ],
-  };
-  for (const [merchant, amountCents, day] of [
-    ["Spotify", 1500, 4],
-    ["Entertainment bundle", 6000, 3],
-    ["Riverside Fitness", 4500, 5],
-  ] as const) {
-    const next = new Date(shift(asOf, day) + "T00:00:00Z");
-    for (let m = 1; m <= 3; m++) {
-      const d = new Date(
-        Date.UTC(
-          next.getUTCFullYear(),
-          next.getUTCMonth() - m,
-          next.getUTCDate(),
-        ),
-      );
-      data.transactions.push({
-        id: `${profile}-${merchant}-${m}`,
-        accountId,
-        merchant,
-        category: "Subscription",
-        description: "Fictional recurring service",
-        date: d.toISOString().slice(0, 10),
-        amountCents: -amountCents,
-        fictional: true,
-      });
-    }
-  }
-  data.bills = [
-    {
-      id: "utility",
-      accountId,
-      name: "Electric utility",
-      dueDate: shift(asOf, 2),
-      amountCents: 10000,
-      category: "Utilities",
-      essential: true,
-    },
-    {
-      id: "repair",
-      accountId,
-      name: "Unexpected bicycle repair",
-      dueDate: shift(asOf, 6),
-      amountCents: 7000,
-      category: "Transport",
-      essential: true,
-    },
-  ];
-  for (const day of [14, 28])
-    data.transactions.push({
-      id: `income-${day}`,
-      accountId,
-      merchant: "Fictional employer",
-      category: "Income",
-      description: "Expected payroll — not guaranteed",
-      date: shift(asOf, day),
-      amountCents: profile === "kevin" ? 180000 : profile === "ava" ? 240000 : 210000,
-      pending: true,
-      fictional: true,
-    });
-  // Cleared history supports activity, income and category views without
-  // replaying these amounts against the snapshot's closing account balance.
-  for (let week = 0; week < 8; week++) {
-    data.transactions.push({
-      id: `${profile}-groceries-${week}`, accountId, merchant: "Maple Market",
-      category: "Groceries", description: "Fictional cleared grocery purchase",
-      date: shift(asOf, -3 - week * 7), amountCents: -(6300 + week * 237), fictional: true,
-    });
-  }
-  for (const day of [-14, -28, -42, -56]) {
-    data.transactions.push({
-      id: `${profile}-cleared-payroll-${-day}`, accountId, merchant: "Fictional employer",
-      category: "Income", description: "Fictional cleared payroll",
-      date: shift(asOf, day), amountCents: profile === "kevin" ? 180000 : profile === "ava" ? 240000 : 210000,
-      fictional: true,
-    });
-  }
-  return data;
-}
+export const fixtureData = financialSnapshot;
 export function personalData(s: DemoState, profile: ProfileId) {
   const data = applyPersonalRecords(fixtureData(profile, s.asOf), s.plans[profile].recordSets?.[`demo:demo:${profile}`] || []);
   for (const c of s.commitments) {

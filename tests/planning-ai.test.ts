@@ -110,7 +110,7 @@ test("Gemini output cannot inject invented financial statements or perform actio
     const s = initialState("2026-10-17");
     const r = await assistant(s, "kevin", "Explain rent risk", "en", "scope");
     assert.equal(r.source, "gemini");
-    assert.match(r.reply, /-\$10.00/);
+    assert.match(r.reply, /-\$200.00/);
     assert.ok(!r.reply.includes("9,999,999"));
     assert.deepEqual(s.plans.kevin.simulation, {});
     assert.deepEqual(s.consents, {});

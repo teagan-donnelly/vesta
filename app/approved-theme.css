@@ -1503,3 +1503,34 @@ html[data-theme="dark"] .avatar {
     transition: none !important;
   }
 }
+.welcome-banner {
+  min-height: 220px;
+  background-color: #f8f1e7;
+  background-image: none;
+}
+.welcome-banner::before { content: ""; position: absolute; inset: 0 0 0 auto; width: min(100%, 720px); background: url('/brand/vesta-welcome-landscape.png') right center / auto 100% no-repeat; mask-image: linear-gradient(90deg, transparent, black 30%); pointer-events: none; }
+.welcome-banner > div:first-child { position: relative; z-index: 1; max-width: 60%; }
+.risk-figures { display: flex; flex-wrap: wrap; gap: 24px; margin: 18px 0; }
+.risk-figures dt { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.risk-figures dd { margin: 0; font-size: 25px; font-weight: 650; font-variant-numeric: tabular-nums; color: var(--accent); }
+.assistant-context { padding: 24px 28px; margin-bottom: 18px; border: 1px solid #e4c8c4; border-radius: 12px; background: var(--surface); }
+.assistant-context h2 { margin: 8px 0; font-size: 24px; }
+.assistant-context p { max-width: 850px; line-height: 1.7; margin-top: 8px; }
+.scenario-options { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; padding: 24px; }
+.scenario-options article { padding: 20px; border: 1px solid var(--border); border-radius: 10px; }
+.scenario-options h3 { font-size: 17px; margin-bottom: 10px; }
+.scenario-options p { margin-bottom: 12px; line-height: 1.6; }
+html[data-theme="dark"] .welcome-banner { background-image: none; }
+html[data-theme="dark"] .welcome-banner::before { opacity: 0.45; }
+@media(max-width: 760px) {
+  .welcome-banner { min-height: 180px; background-position: right center; }
+  .welcome-banner > div:first-child { max-width: 70%; }
+  .risk-figures { gap: 18px; }
+  .scenario-options { grid-template-columns: 1fr; padding: 16px; }
+}
+@media(max-width: 500px) {
+  .welcome-banner { background-image: none; min-height: 155px; }
+  .welcome-banner::before { display: none; }
+  .welcome-banner > div:first-child { max-width: 100%; }
+  .risk-figures dd { font-size: 22px; }
+}

@@ -106,7 +106,7 @@ export function ActivityTable({
                         : data.source === "nessie"
                           ? `Nessie ${t.recordType || "record"}`
                           : t.description}
-                      {t.pending ? " · Pending" : ""}
+                      {t.pending ? data.source === "demo" ? " · Planned / estimated" : " · Pending" : ""}
                     </span>
                   </td>
                   <td>

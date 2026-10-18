@@ -258,6 +258,8 @@ export function applyPersonalRecords(
           status: "active",
         }) as Subscription,
     );
+  if (records.some(r => r.kind === "transaction" && r.date && r.date <= base.asOf))
+    delete data.balanceHistory; // Manual observations have no verified historical cash anchor.
   data.canceledSubscriptionIds = records
     .filter((r) => r.kind === "subscription" && r.status === "canceled")
     .map((r) => r.referenceId || `${r.accountId}:manual-${r.id}`);

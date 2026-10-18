@@ -6,31 +6,38 @@ import { useFinancial } from "./financial-provider";
 import { financialWarning } from "@/lib/financial-guidance";
 import { forecastEvents, formatCurrency } from "@/lib/analysis";
 import { dateLabel } from "./activity-table";
+import { paymentReadiness } from "@/lib/planning-options";
 export function FinancialRisk() {
-  const { data } = useFinancial();
+  const { data, simulation } = useFinancial();
   if (!data) return null;
   const risk = financialWarning(data);
   if (!risk) return null;
+  const saved = risk.eventId ? paymentReadiness(data, risk.eventId, simulation) : null;
   return (
     <section className="risk-action" aria-label="Upcoming financial risk">
       <div>
         <span className="risk-kicker">Something to plan for</span>
         <h2>
-          {risk.label} may leave you {formatCurrency(risk.shortfallCents)} short
-          on {dateLabel(risk.date)}.
+          {risk.commitment ? `Your ${new Intl.DateTimeFormat("en-US", { month: "long", timeZone: "UTC" }).format(new Date(risk.date + "T00:00:00Z"))} ${/rent/i.test(risk.label) ? "rent" : risk.label} contribution may be at risk.` : `${risk.label} may leave you short on ${dateLabel(risk.date)}.`}
         </h2>
-        <p>This is an estimate based on your current outlook.</p>
+        {risk.shareCents !== null && <dl className="risk-figures">
+          <div><dt>Your share</dt><dd>{formatCurrency(risk.shareCents)}</dd></div>
+          <div><dt>Estimated available by {dateLabel(risk.date)}</dt><dd>{formatCurrency(risk.availableCents || 0)}</dd></div>
+          <div><dt>Potential shortage</dt><dd>{formatCurrency(risk.shortfallCents)}</dd></div>
+        </dl>}
+        <p>{formatCurrency(risk.precedingExpensesCents)} in scheduled or estimated expenses falls before this payment.{risk.nextIncomeDate ? ` Your next expected income arrives ${dateLabel(risk.nextIncomeDate)}, after the deadline.` : ""} Estimates do not reserve funds or confirm payments.</p>
+        {saved && saved.coveredCents !== risk.availableCents && <p><strong>Current what-if plan:</strong> {formatCurrency(saved.coveredCents)} estimated toward your share; {saved.shortfallCents === 0 ? "your contribution looks covered" : `${formatCurrency(saved.shortfallCents)} still to cover`}. Your original outlook and actual finances are unchanged.</p>}
       </div>
       <div className="risk-actions">
         <Link className="button button-primary" href={risk.href}>
-          Find a way to cover {formatCurrency(risk.shortfallCents)}
+          Find a way to cover the difference
         </Link>
         {risk.commitment && (
           <Link
             className="text-link"
             href={`/shared?commitment=${encodeURIComponent(risk.commitment)}`}
           >
-            See the shared expense →
+            See shared expenses →
           </Link>
         )}
       </div>

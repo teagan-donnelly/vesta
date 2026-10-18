@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   Wallet,
@@ -31,7 +30,7 @@ import {
 } from "@/lib/management";
 export function Dashboard() {
   const { data, recordsError } = useFinancial();
-  const [chart, setChart] = useState("expenses");
+  const [chart, setChart] = useState("balance");
   if (!data)
     return (
       <AegisShell title="Home" subtitle="Your financial future, protected.">
@@ -52,7 +51,7 @@ export function Dashboard() {
       label: "Total available balance",
       value: liquidBalance(data),
       icon: Wallet,
-      note: "Reported checking & savings",
+      note: data.source === "demo" ? "Fictional checking snapshot" : "Reported checking & savings",
     },
     {
       label: "Monthly income",
@@ -67,37 +66,21 @@ export function Dashboard() {
       note: "Recorded expenses · month to date",
     },
     {
-      label: "Monthly net savings",
+      label: "Net cash flow this month",
       value: totals.savings,
       icon: PiggyBank,
-      note: "Recorded income less spending",
+      note: "Income less recorded spending; not money set aside",
     },
   ];
   return (
     <AegisShell title="Home" subtitle="Your financial future, protected.">
       <section className="welcome-banner">
         <div>
-          <span className="eyebrow">YOUR MONEY. YOUR FUTURE.</span>
+          <span className="eyebrow">FINANCIAL ACCOUNTABILITY WITHOUT FINANCIAL SURVEILLANCE</span>
           <h1>
             Good to see you, <em>{name}.</em>
           </h1>
           <p>Your financial future, protected.</p>
-        </div>
-        <div className="welcome-art" aria-hidden="true">
-          <Image
-            src="/brand/vesta-goddess.png"
-            width={360}
-            height={180}
-            alt=""
-            unoptimized
-          />
-          <span>
-            PLAN
-            <br />
-            PROTECT
-            <br />
-            GROW
-          </span>
         </div>
       </section>
       <div className="dashboard-metrics">
@@ -146,7 +129,9 @@ export function Dashboard() {
             </span>
             <Badge>Month to date</Badge>
           </div>
-          {chart === "expenses" ? (
+          {chart === "balance" && data.source === "demo" && data.balanceHistory?.length ? (
+            <HistoryChart points={data.balanceHistory.filter(p => p.date.startsWith(data.asOf.slice(0, 7)))} bars seriesName="Closing balance" label="Reconciled fictional daily closing balances" />
+          ) : chart === "expenses" ? (
             data.transactions.some(
               (t) => !t.pending && t.date.startsWith(data.asOf.slice(0, 7)),
             ) ? (

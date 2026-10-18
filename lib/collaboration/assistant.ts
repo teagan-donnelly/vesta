@@ -7,6 +7,8 @@ import {
   type ProfileId,
 } from "./model";
 import { backboard, ensureAssistant } from "./backboard";
+import type { Simulation } from "../types";
+import { planningOptions, paymentReadiness } from "../planning-options";
 const intents = [
   "risk",
   "options",
@@ -37,7 +39,7 @@ export async function assistant(
     ? "simulate"
     : /privacy|share|privaci|compart/i.test(question)
       ? "privacy"
-      : /how|improve|options|mejor|opcion|ajust/i.test(question)
+      : /how|improve|options|change|before|mejor|opcion|ajust/i.test(question)
         ? "options"
         : /risk|rent|forecast|riesgo|alquiler|pron[oó]stico/i.test(question)
           ? "risk"
@@ -116,6 +118,7 @@ export async function assistant(
       "may be at risk",
   );
   const excluded = [
+    ...(data.planningPreferences || []),
     ...(plan.memoryOptIn ? plan.preferences : []),
     ...plan.messages.filter((m) => m.role === "user").map((m) => m.content),
     question,
@@ -151,7 +154,7 @@ export async function assistant(
   )
     intent = "simulate";
   let proposal: {
-    simulation: { removedSubscriptions: string[] };
+    simulation: Simulation;
     label: string;
     beforeCents: number;
     afterCents: number;
@@ -196,14 +199,23 @@ export async function assistant(
     reply = spanish
       ? "Un pronóstico es una estimación, no una garantía. Un compromiso es un plan de aportar; un monto declarado no es un pago confirmado. Prioriza necesidades y revisa fechas antes de cambiar gastos."
       : "A forecast is an estimate, not a guarantee. An agreed contribution is a plan; a reported amount is not a confirmed payment. Prioritize essentials and review deadlines before changing spending.";
-  else if (intent === "options")
+  else if (intent === "options") {
+    const choices = planningOptions(data, plan.simulation, [...plan.preferences, question]);
+    const best = choices[0];
+    const spanishOption = best?.simulation.delayDays
+      ? "Posponer la compra opcional hasta después del próximo ingreso, sin retrasar pagos obligatorios."
+      : best?.simulation.paymentCents !== undefined
+        ? "Reducir la compra opcional y revisar un servicio recurrente antes del alquiler."
+        : "Revisar un servicio recurrente antes del alquiler; esto no cancela el servicio.";
+    if (best) proposal = { simulation: best.simulation, label: best.label, beforeCents: best.beforeCents, afterCents: best.afterCents };
     reply = spanish
-      ? `Puedes revisar ${options.map((o) => o.merchant).join(", ")}. ${/gym|fitness|gimnasio/i.test(excluded) ? "Tu preferencia de mantener el gimnasio está guardada. " : ""}¿Qué servicio quieres simular?`
-      : `You could review ${options.map((o) => o.merchant).join(", ")}. ${/gym|fitness|gimnasio/i.test(excluded) ? "Your preference to keep the gym is respected. " : ""}Which service would you like to simulate?`;
+      ? `${/gym|fitness|gimnasio/i.test(excluded) ? "Respetamos tu preferencia de mantener el gimnasio. " : ""}${best ? `${spanishOption} El saldo mínimo cambia de ${formatCurrency(best.beforeCents)} a ${formatCurrency(best.afterCents)}; ${best.shortfallCents === 0 ? "tu aporte parece cubierto" : `faltan ${formatCurrency(best.shortfallCents)}`} antes del ${best.dueDate}. Confirma solo si deseas aplicar este plan hipotético.` : "Tu plan guardado no muestra un aporte compartido en riesgo. Revisa el pronóstico antes de cambiar tus gastos."}`
+      : `${/gym|fitness|gimnasio/i.test(excluded) ? "Your preference to keep the gym is respected. " : ""}${best ? `${best.description} Your lowest balance changes from ${formatCurrency(best.beforeCents)} to ${formatCurrency(best.afterCents)}. Your rent share ${best.shortfallCents === 0 ? "looks covered" : `still has a ${formatCurrency(best.shortfallCents)} gap`} by ${best.dueDate}. ${choices[1] ? `Another option: ${choices[1].description} Its lowest balance is ${formatCurrency(choices[1].afterCents)}.` : ""} Confirm separately to apply a hypothetical plan.` : "Your saved plan does not show a shared contribution gap. You can still explore individual services in Forecast."}`;
+  }
   else if (intent === "risk")
     reply = spanish
       ? `El saldo mínimo base es ${formatCurrency(baseline.lowestBalanceCents)} el ${baseline.lowestBalanceDate}. ${risk ? `${risk.name} vence el ${risk.dueDate} y tu aporte puede estar en riesgo.` : "Revisa tus compromisos y sus fechas."} Los ingresos futuros no están garantizados. ¿Exploramos ajustes?`
-      : `Your baseline low is ${formatCurrency(baseline.lowestBalanceCents)} on ${baseline.lowestBalanceDate}. ${risk ? `${risk.name} is due ${risk.dueDate}; your contribution may be at risk.` : "Review your commitments and due dates."} Future income is not guaranteed. Shall we explore adjustments?`;
+      : `Your original outlook reaches ${formatCurrency(baseline.lowestBalanceCents)} on ${baseline.lowestBalanceDate}. ${risk ? (() => { const estimate = paymentReadiness(data, `bill:shared-${risk.id}`); const own = risk.contributions.find(a => a.profile === profile)!; return `${risk.name} is due ${risk.dueDate}: your share is ${formatCurrency(own.expectedCents)}, with ${formatCurrency(estimate?.coveredCents || 0)} estimated available and a ${formatCurrency(estimate?.shortfallCents || 0)} gap. The saved what-if low is ${formatCurrency(simulated.lowestBalanceCents)}.`; })() : "Review your commitments and due dates."} Future income is not guaranteed. Shall we explore adjustments?`;
   else
     reply = spanish
       ? "¿Quieres revisar el riesgo de alquiler, simular Spotify, proteger tu privacidad o aprender un término financiero? Solo puedo analizar tus propios datos ficticios."

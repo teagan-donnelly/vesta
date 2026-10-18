@@ -50,7 +50,7 @@ async function main() {
       fullPage: true,
     });
     await page.getByRole("button", { name: "Balance", exact: true }).click();
-    await expect(page.getByText("Current balance, with clarity")).toBeVisible();
+    await expect(page.getByRole("img", { name: "Reconciled fictional daily closing balances" })).toBeVisible();
     await page.getByRole("button", { name: "Expenses", exact: true }).click();
     await page.goto(`${base}/transactions`);
     await page

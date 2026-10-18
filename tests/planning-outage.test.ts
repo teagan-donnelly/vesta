@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { POST } from "../app/api/demo-snapshot/route";
 import { initialState, SNAPSHOT_DATE, type DemoState } from "../lib/collaboration/model";
+import { planningOptions } from "../lib/planning-options";
 import { project, subscriptionsFor } from "../lib/analysis";
 
 test("Kevin → Domino → Shared → Ava survives stateless round trips with disclosure and baseline isolation", async () => {
@@ -27,14 +28,13 @@ test("Kevin → Domino → Shared → Ava survives stateless round trips with di
     assert.equal(before.source, "demo");
     assert.equal(before.asOf, SNAPSHOT_DATE);
     const baseline = project(before);
-    assert.equal(baseline.lowestBalanceCents, -1000);
+    assert.equal(baseline.lowestBalanceCents, -20000);
     assert.ok(before.bills.some((b: { id: string }) => b.id === "shared-rent"));
-    const spotify = subscriptionsFor(before).find(s => s.merchant === "Spotify")!;
     assert.ok(subscriptionsFor(before).every(s => !/rent/i.test(s.merchant)));
-    await call("/api/collaboration?profile=kevin", { action: "scenario", simulation: { removedSubscriptions: [spotify.id] } });
+    await call("/api/collaboration?profile=kevin", { action: "scenario", simulation: planningOptions(before)[0].simulation });
     const refreshed = await call("/api/personal-planning?profile=kevin");
     assert.deepEqual(project(refreshed), baseline);
-    assert.equal(project(refreshed, refreshed.planningSimulation).lowestBalanceCents, 500);
+    assert.equal(project(refreshed, refreshed.planningSimulation).lowestBalanceCents, 13000);
     let ava = await call("/api/collaboration?profile=ava");
     let kevin = ava.workspaces[0].commitments[0].contributions.find((p: { profile: string }) => p.profile === "kevin");
     assert.equal(kevin.scenarioStatus, "not shared");
@@ -80,4 +80,28 @@ test("snapshot transport rejects forged origins, paths, dates and remote resourc
   assert.equal(result.state.plans.kevin.assistantId, undefined);
   state.asOf = "2027-01-01";
   assert.equal((await POST(request(input))).status, 400);
+});
+
+test("older browser snapshots receive new budgets once without losing edits, deletions, consent or saved plans", async () => {
+  const state = initialState();
+  delete state.snapshotRevision;
+  const records = state.plans.kevin.recordSets!["demo:demo:kevin"];
+  state.plans.kevin.recordSets!["demo:demo:kevin"] = records.filter(r => !/-(restaurants|transport)-budget$/.test(r.id) && r.id !== "kevin-travel");
+  state.plans.kevin.preferences = ["Keep my private preference"];
+  state.plans.kevin.simulation = { eventId: "pending:planned-headphones", delayDays: 6 };
+  state.consents["household:kevin"] = { readiness: true, coverage: false, balance: false, expenseIds: [] };
+  async function read(value: typeof state) {
+    const r = await POST(new Request("https://vesta.example/api/demo-snapshot", { method: "POST", headers: { origin: "https://vesta.example" }, body: JSON.stringify({ version: 1, session: randomUUID(), state: value, path: "/api/records?mode=demo&customer=demo:kevin", method: "GET" }) }));
+    assert.equal(r.status, 200);
+    return (await r.json()).state as typeof state;
+  }
+  const migrated = await read(state);
+  assert.equal(migrated.snapshotRevision, 2);
+  assert.deepEqual(migrated.plans.kevin.simulation, state.plans.kevin.simulation);
+  assert.deepEqual(migrated.consents, state.consents);
+  assert.deepEqual(migrated.plans.kevin.preferences, state.plans.kevin.preferences);
+  assert.ok(!migrated.plans.kevin.recordSets!["demo:demo:kevin"].some(r=>r.id==='kevin-travel'));
+  assert.equal(migrated.plans.kevin.recordSets!["demo:demo:kevin"].filter(r=>r.kind==='budget').length, 3);
+  migrated.plans.kevin.recordSets!["demo:demo:kevin"] = migrated.plans.kevin.recordSets!["demo:demo:kevin"].filter(r=>r.id!=='kevin-transport-budget');
+  assert.ok(!(await read(migrated)).plans.kevin.recordSets!["demo:demo:kevin"].some(r=>r.id==='kevin-transport-budget'));
 });

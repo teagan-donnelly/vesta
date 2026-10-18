@@ -12,6 +12,8 @@ import { PlanningRecovery } from "@/components/planning-recovery";
 import { useFinancial } from "@/components/financial-provider";
 import { useAssistantLanguage } from "@/lib/assistant-language";
 import type { assistant } from "@/lib/collaboration/assistant";
+import { formatCurrency } from "@/lib/analysis";
+import { dateLabel } from "@/components/activity-table";
 type Reply = Awaited<ReturnType<typeof assistant>>;
 export default function AssistantPage() {
   return (
@@ -66,6 +68,12 @@ function Conversation({ profile }: { profile: string }) {
     <div className="chat-workspace">
       <DemoDisclosure storage={data.storage} />
       {error && <Notice tone="risk">{error}</Notice>}
+      {data.context.risk && <section className="assistant-context" aria-label="Your planning context">
+        <span className="eyebrow">YOUR FINANCES, IN CONTEXT</span>
+        <h2>Your upcoming rent contribution may be at risk.</h2>
+        <p>{formatCurrency(data.context.risk.availableCents || 0)} is estimated available for your {formatCurrency(data.context.risk.shareCents || 0)} share by {dateLabel(data.context.risk.date)}. Want to explore ways to cover the {formatCurrency(data.context.risk.shortfallCents)} difference?</p>
+        {data.context.preferences.map(p => <p className="subtext" key={p}>Fictional profile preference: {p} This is local context, not a claim of saved AI memory.</p>)}
+      </section>}
       <Panel
         className="chat-panel"
         title="Your conversation"
@@ -105,7 +113,7 @@ function Conversation({ profile }: { profile: string }) {
               <p>
                 {spanish
                   ? "Puedo ayudarte a revisar el alquiler, explorar cambios y decidir qué compartir. ¿Por dónde empezamos?"
-                  : "I can help you understand upcoming payments, explore changes, and decide what to share. What would you like to work on?"}
+                  : data.context.risk ? "Let's protect your rent contribution while respecting what matters to you. I can compare changes before the deadline and show what your roommate would see." : "I can help you understand upcoming payments, explore changes, and decide what to share. What would you like to work on?"}
               </p>
             </article>
           )}
@@ -173,6 +181,7 @@ function Conversation({ profile }: { profile: string }) {
               ]
             : [
                 "Can I afford my rent?",
+                ...(data.context.risk ? [`What could I change before ${dateLabel(data.context.risk.date)}?`] : ["What are my options?"]),
                 "I want to keep my gym membership.",
                 "What happens if I cancel Spotify?",
                 "How would this affect my roommate?",

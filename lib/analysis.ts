@@ -272,6 +272,9 @@ export function forecastEvents(data: FinancialData): ForecastEvent[] {
     const cadence = recurrence(items);
     const kind = classify(last);
     const subscriptionId = `${last.accountId}:${key(last.merchant)}`;
+    // Explicit upcoming payroll dates supersede inferred cadence. Semimonthly
+    // pay is not biweekly: extrapolating 14 days can invent income before rent.
+    if (kind === "income" && events.some(e => e.id.startsWith("pending:") && e.kind === "income" && e.accountId === last.accountId && e.merchantKey === key(last.merchant))) continue;
     if (
       kind === "subscription" &&
       (data.canceledSubscriptionIds?.includes(subscriptionId) ||

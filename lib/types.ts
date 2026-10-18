@@ -1,6 +1,9 @@
 export type DataSource = "demo" | "nessie";
 
 export interface FinancialData {
+  /** Reconciled fictional observations only; absent when a source supplies none. */
+  balanceHistory?: { date: string; value: number }[];
+  planningPreferences?: string[];
   manualSubscriptions?: Subscription[];
   canceledSubscriptionIds?: string[];
   source: DataSource;
@@ -56,6 +59,8 @@ export interface Account {
 }
 
 export interface Transaction {
+  /** Explicit optional local purchase plan, never an inferred contractual bill. */
+  discretionary?: boolean;
   originalCategory?: string;
   originalDescription?: string;
   provenance?: "manual";

@@ -14,7 +14,7 @@ async function main() {
     await page.waitForFunction(({ profile, check }) => {
       const snapshot = JSON.parse(localStorage.getItem("vesta.snapshot.v1") || "null");
       const plan = snapshot?.state?.plans?.[profile];
-      return check === "scenario" ? Boolean(plan?.simulation?.removedSubscriptions?.length) :
+      return check === "scenario" ? Boolean(plan?.simulation?.eventId) :
         check === "consent" ? snapshot?.state?.consents?.[`household:${profile}`]?.readiness === true :
         check === "revoked" ? snapshot?.state?.consents?.[`household:${profile}`]?.readiness === false : Boolean(plan);
     }, { profile, check });
@@ -32,14 +32,32 @@ async function main() {
     await switchTo("kevin");
     await expect(page.getByRole("heading", { name: /Good to see you, Kevin/ })).toBeVisible();
     await expect(page.getByRole("region", { name: "Upcoming financial risk" })).toBeVisible();
-    await page.goto(base + "/domino");
-    await page.getByRole("checkbox", { name: /Spotify/ }).check();
-    await page.getByRole("button", { name: "Confirm and update my plan" }).click();
+    await expect(page.getByRole("region", { name: "Upcoming financial risk" })).toContainText("$800.00");
+    await expect(page.getByRole("region", { name: "Upcoming financial risk" })).toContainText("$200.00");
+    await page.screenshot({ path: join(directory, "kevin-home.png"), fullPage: true });
+    await page.goto(base + "/shared");
+    await expect(page.locator(".shared-key-figures")).toContainText("$1,000.00");
+    await page.getByRole("link", { name: "Ask about our expenses", exact: true }).click();
+    await expect(page.getByRole("region", { name: "Your planning context" })).toContainText("$200.00");
+    await page.getByRole("button", { name: "I want to keep my gym membership.", exact: true }).click();
+    await expect(page.locator(".scenario-proposal")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole("log")).toContainText("$130.00");
+    await expect(page.getByRole("log")).toContainText("gym is respected");
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vesta.snapshot.v1")!).state.plans.kevin.simulation)).toEqual({});
+    await page.screenshot({ path: join(directory, "kevin-assistant.png"), fullPage: true });
+    await page.getByRole("button", { name: "Confirm this what-if change", exact: true }).click();
     await stored("kevin", "scenario");
+    await page.goto(base + "/domino");
+    await page.getByText("Delay an expense, receive income later, or change a payment", { exact: true }).click();
+    await expect(page.getByRole("spinbutton", { name: "Delay selected event in days" })).toHaveValue("6");
     await page.reload();
-    await expect(page.getByRole("checkbox", { name: /Spotify/ })).toBeChecked();
-    await expect(page.locator(".mini-metrics")).toContainText("-$10.00");
+    await page.getByText("Delay an expense, receive income later, or change a payment", { exact: true }).click();
+    await expect(page.getByRole("spinbutton", { name: "Delay selected event in days" })).toHaveValue("6");
+    await expect(page.locator(".mini-metrics")).toContainText("-$200.00");
     await page.screenshot({ path: join(directory, "kevin-domino.png"), fullPage: true });
+    await page.goto(base);
+    await expect(page.getByRole("region", { name: "Upcoming financial risk" })).toContainText("Current what-if plan:");
+    await expect(page.getByRole("region", { name: "Upcoming financial risk" })).toContainText("your contribution looks covered");
     await page.goto(base + "/shared");
     await expect(page.getByRole("heading", { name: "Maple Street household" })).toBeVisible();
     await page.locator("#sharing > summary").click();
@@ -50,7 +68,7 @@ async function main() {
     await switchTo("ava");
     await expect(page.locator(".member-outlooks")).toContainText("Kevin:");
     await expect(page.locator(".member-outlooks")).toContainText("with their changes");
-    await expect(page.locator(".member-outlooks")).not.toContainText("$1,280");
+    await expect(page.locator(".member-outlooks")).not.toContainText("$1,420");
     await page.reload();
     await expect(page.locator(".member-outlooks")).toContainText("with their changes");
     await page.screenshot({ path: join(directory, "ava-shared.png"), fullPage: true });

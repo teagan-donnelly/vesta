@@ -27,7 +27,7 @@ process.env.VESTA_DEMO_DIR = join(
 test("Home warning uses the actual forecast and carries the affected payment to Plan Ahead", () => {
   const state = initialState("2026-10-17");
   const risk = financialWarning(personalData(state, "kevin"))!;
-  assert.equal(risk.shortfallCents, 1000);
+  assert.equal(risk.shortfallCents, 20000);
   assert.equal(risk.date, "2026-10-27");
   assert.equal(risk.label, "Monthly rent");
   const query = new URL(risk.href, "http://localhost").searchParams;

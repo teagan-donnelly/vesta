@@ -6,6 +6,7 @@ import { GET as readFinancial } from "../financial-data/route";
 import { POST as explain } from "../explain/route";
 import { initialState, SNAPSHOT_DATE, type DemoState } from "@/lib/collaboration/model";
 import { snapshotContext } from "@/lib/collaboration/store";
+import { snapshotRecords } from "@/lib/collaboration/snapshot-records";
 
 const handlers: Record<string, Partial<Record<string, (r: Request) => Promise<Response>>>> = {
   "/api/collaboration": { GET: readShared, POST: changeShared },
@@ -28,7 +29,16 @@ function validState(raw: unknown): DemoState {
   for (const p of ["ava", "kevin", "maya"] as const) {
     const plan = s.plans[p];
     if (!plan || !plan.simulation || !Array.isArray(plan.preferences) || !Array.isArray(plan.messages) || plan.messages.length > 200) throw Error();
+    if ((s.snapshotRevision || 1) < 2) {
+      // Add only newly introduced baseline budgets to older browser snapshots.
+      // Preserve existing records, deletions, simulations, messages and consent.
+      const sets = (plan.recordSets ||= {}), scope = `demo:demo:${p}`;
+      const records = (sets[scope] ||= []);
+      for (const record of snapshotRecords(p, s.asOf).filter(r => /-(restaurants|transport)-budget$/.test(r.id)))
+        if (!records.some(r => r.id === record.id)) records.push(record);
+    }
   }
+  s.snapshotRevision = 2;
   return s;
 }
 export async function POST(request: Request) {

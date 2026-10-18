@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { initialState, personalData, workspaceView, SNAPSHOT_AT } from "../lib/collaboration/model";
-import { project, subscriptionsFor } from "../lib/analysis";
+import { planningOptions } from "../lib/planning-options";
+import { project } from "../lib/analysis";
 const state = initialState();
 for (const profile of ["ava", "kevin", "maya"] as const) {
   const data = personalData(state, profile);
@@ -13,10 +14,10 @@ for (const profile of ["ava", "kevin", "maya"] as const) {
 }
 const data = personalData(state, "kevin");
 const baseline = project(data);
-const spotify = subscriptionsFor(data).find(s => s.merchant === "Spotify")!;
-assert.equal(baseline.lowestBalanceCents, -1000);
-state.plans.kevin.simulation = { removedSubscriptions: [spotify.id] };
-assert.equal(project(data, state.plans.kevin.simulation).lowestBalanceCents, 500);
+const option = planningOptions(data)[0];
+assert.equal(baseline.lowestBalanceCents, -20000);
+state.plans.kevin.simulation = option.simulation;
+assert.equal(project(data, state.plans.kevin.simulation).lowestBalanceCents, 13000);
 assert.deepEqual(project(data), baseline);
 assert.equal(workspaceView(state, "household", "ava").commitments[0].contributions[1].scenarioStatus, "not shared");
 state.consents["household:kevin"] = { readiness: true, coverage: false, balance: false, expenseIds: [] };

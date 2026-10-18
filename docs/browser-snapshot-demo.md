@@ -1,11 +1,14 @@
 # Browser-local hackathon snapshot
 
+For the current enriched dataset, exact $200 rent gap and presentation sequence,
+see [Final demo polish](final-demo-polish.md).
+
 This is the current demo architecture. Earlier Tiger setup and outage documents
 describe the archived production adapter, not a requirement for this application.
 
 All three fictional profiles represent **2026-10-17 at 12:00 UTC**, regardless of
-the current date or which profile opens first. Ava starts with $3,000 in checking,
-Kevin with $1,280, and Maya with $2,450. Historical activity is already reflected
+the current date or which profile opens first. Ava starts with $6,200 in checking,
+Kevin with $1,420, and Maya with $5,450. Historical activity is already reflected
 in those closing balances and is never replayed. Every profile includes payroll,
 subscriptions, grocery history, upcoming bills, recorded credit/payment history,
 savings goals, budget, investment valuations, a fictional policy and emergency
@@ -15,10 +18,10 @@ they are not added to checking funds.
 ## Demonstration
 
 1. Open Home and select Kevin in the Demo Profile Switcher. His $1,000 rent share
-   is due October 27 before the next expected paycheck on October 31. His
-   baseline forecast reaches -$10.
-2. Open Plan Ahead → Forecast (Domino). Simulate removing Spotify. The scenario
-   low point becomes $5; the baseline stays -$10. Select **Confirm and update my
+   is due October 27 before the next expected paycheck on October 28. His
+   baseline forecast reaches -$200.
+2. Open Plan Ahead → Forecast (Domino). Preview postponing the optional studio purchase. The scenario
+   low point becomes $130; the baseline stays -$200. Select **Confirm and update my
    plan** to retain the hypothetical scenario, then refresh to verify it.
 3. In Shared Finances, open the privacy controls. Kevin initially shares no
    readiness, coverage, balance or individual expenses. Enable readiness only
@@ -89,7 +92,7 @@ build. Do not run them as part of the hackathon demo.
 
 ## Verified rollout
 
-The implementation passed 81 automated tests, lint, TypeScript, the production
+The implementation passed the automated regression tests, lint, TypeScript, the production
 build and secret scanning. Chrome verified the management forms and layouts at
 desktop, tablet and mobile sizes. The complete Kevin → Domino → Shared Finances
 → Ava flow, refresh persistence, readiness-only disclosure, revocation, all three

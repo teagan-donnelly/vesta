@@ -21,6 +21,8 @@ import {
   withDemo,
 } from "@/lib/collaboration/store";
 import { isIsoDate, shift } from "@/lib/analysis";
+import { financialWarning } from "@/lib/financial-guidance";
+import { planningOptions } from "@/lib/planning-options";
 
 function text(value: unknown, max = 100) {
   if (
@@ -59,6 +61,11 @@ export function payload(s: DemoState, viewer: ProfileId, forceLocal = false) {
       memoryOptIn: plan.memoryOptIn,
       preferences: plan.preferences,
       messages: plan.messages,
+    },
+    context: {
+      risk: financialWarning(personalData(s, viewer)),
+      preferences: personalData(s, viewer).planningPreferences || [],
+      options: planningOptions(personalData(s, viewer), plan.simulation, plan.preferences),
     },
     expenses: personalData(s, viewer)
       .transactions.filter((t) => t.amountCents < 0)

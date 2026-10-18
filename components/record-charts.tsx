@@ -29,11 +29,13 @@ export function HistoryChart({
   bars = false,
   currency = true,
   label,
+  seriesName,
 }: {
   points: { date: string; value: number }[];
   bars?: boolean;
   currency?: boolean;
   label: string;
+  seriesName?: string;
 }) {
   if (!points.length)
     return (
@@ -86,7 +88,8 @@ export function HistoryChart({
           />
           {bars ? (
             <Bar
-              name="Expenses"
+              name={seriesName || "Expenses"}
+              isAnimationActive={false}
               dataKey="value"
               fill="#bb6e70"
               radius={[3, 3, 0, 0]}
@@ -94,6 +97,7 @@ export function HistoryChart({
             />
           ) : (
             <Line
+              isAnimationActive={false}
               name={currency ? "Recorded value" : "Recorded score"}
               dataKey="value"
               stroke="#800f1a"
@@ -128,6 +132,7 @@ export function AllocationChart({
         <ResponsiveContainer width="100%" height={205}>
           <PieChart>
             <Pie
+              isAnimationActive={false}
               data={items}
               dataKey="value"
               nameKey="name"
