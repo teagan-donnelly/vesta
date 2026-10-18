@@ -1,0 +1,93 @@
+import { chromium, expect } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
+const base = process.env.DEMO_BASE_URL || "http://localhost:3002";
+async function main() {
+  const browser = await chromium.launch({ channel: "chrome", headless: true });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1050 } });
+  const page = await context.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  const directory = join(process.cwd(), ".tmp", "snapshot-verification");
+  await mkdir(directory, { recursive: true });
+  async function stored(profile: string, check: string) {
+    await page.waitForFunction(({ profile, check }) => {
+      const snapshot = JSON.parse(localStorage.getItem("vesta.snapshot.v1") || "null");
+      const plan = snapshot?.state?.plans?.[profile];
+      return check === "scenario" ? Boolean(plan?.simulation?.removedSubscriptions?.length) :
+        check === "consent" ? snapshot?.state?.consents?.[`household:${profile}`]?.readiness === true :
+        check === "revoked" ? snapshot?.state?.consents?.[`household:${profile}`]?.readiness === false : Boolean(plan);
+    }, { profile, check });
+  }
+  async function switchTo(profile: string) {
+    if (!(await page.locator(".profile-menu").evaluate((element) => (element as HTMLDetailsElement).open)))
+      await page.locator(".profile-menu > summary").click();
+    await page.getByRole("combobox", { name: "Demo Profile Switcher" }).selectOption(profile);
+    await page.keyboard.press("Escape");
+    await stored(profile, "ready");
+    await expect(page.locator(".loading-layout")).toHaveCount(0);
+  }
+  try {
+    await page.goto(base);
+    await switchTo("kevin");
+    await expect(page.getByRole("heading", { name: /Good to see you, Kevin/ })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Upcoming financial risk" })).toBeVisible();
+    await page.goto(base + "/domino");
+    await page.getByRole("checkbox", { name: /Spotify/ }).check();
+    await page.getByRole("button", { name: "Confirm and update my plan" }).click();
+    await stored("kevin", "scenario");
+    await page.reload();
+    await expect(page.getByRole("checkbox", { name: /Spotify/ })).toBeChecked();
+    await expect(page.locator(".mini-metrics")).toContainText("-$10.00");
+    await page.screenshot({ path: join(directory, "kevin-domino.png"), fullPage: true });
+    await page.goto(base + "/shared");
+    await expect(page.getByRole("heading", { name: "Maple Street household" })).toBeVisible();
+    await page.locator("#sharing > summary").click();
+    await page.getByRole("checkbox", { name: "Share whether I can cover my part", exact: true }).check();
+    await page.getByRole("button", { name: "Save sharing choices" }).click();
+    await stored("kevin", "consent");
+    await page.reload();
+    await switchTo("ava");
+    await expect(page.locator(".member-outlooks")).toContainText("Kevin:");
+    await expect(page.locator(".member-outlooks")).toContainText("with their changes");
+    await expect(page.locator(".member-outlooks")).not.toContainText("$1,280");
+    await page.reload();
+    await expect(page.locator(".member-outlooks")).toContainText("with their changes");
+    await page.screenshot({ path: join(directory, "ava-shared.png"), fullPage: true });
+    await switchTo("kevin");
+    await page.locator("#sharing > summary").click();
+    await page.getByRole("button", { name: "Stop sharing everything" }).click();
+    await stored("kevin", "revoked");
+    await switchTo("ava");
+    await expect(page.locator(".member-outlooks")).toContainText("hasn't shared");
+    await page.reload();
+    await expect(page.locator(".member-outlooks")).toContainText("hasn't shared");
+    await switchTo("maya");
+    await expect(page.getByRole("heading", { name: "Cedar Lane household" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Maple Street household" })).toHaveCount(0);
+    for (const profile of ["ava", "kevin", "maya"]) {
+      await switchTo(profile);
+      await page.goto(base);
+      await expect(page.getByRole("heading", { name: new RegExp(`Good to see you, ${profile[0].toUpperCase() + profile.slice(1)}`) })).toBeVisible();
+      await page.reload();
+      await expect(page.getByRole("heading", { name: /Good to see you/ })).toBeVisible();
+      await page.goto(base + "/credit");
+      await expect(page.getByText("Fictional everyday card", { exact: true }).first()).toBeVisible();
+    }
+    await page.goto(base + "/settings");
+    await expect(page.getByText("Tiger Data:", { exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "Reset Demo", exact: true }).click();
+    await page.getByRole("button", { name: "Confirm Reset Demo", exact: true }).click();
+    await stored("kevin", "ready");
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vesta.snapshot.v1")!).state.plans.kevin.simulation)).toEqual({});
+    await switchTo("kevin");
+    await page.goto(base + "/domino");
+    await expect(page.getByRole("checkbox", { name: /Spotify/ })).not.toBeChecked();
+    expect(errors).toEqual([]);
+    console.log("PASS: rendered Kevin → Domino → Shared → Ava, consent/revocation, three profiles, credit records, refresh persistence and Reset Demo. No bank or database writes.");
+  } catch (error) {
+    await page.screenshot({ path: join(directory, "failure.png"), fullPage: true });
+    throw error;
+  } finally { await browser.close(); }
+}
+void main().catch(error => { console.error(error instanceof Error ? error.message : "Browser verification failed."); process.exitCode = 1; });

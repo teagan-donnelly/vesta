@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     );
   try {
     const body = await request.json();
-    if (body.confirmed !== true || !["local", "database"].includes(body.store))
+    if (body.confirmed !== true || body.store !== "local")
       return Response.json(
         { error: "Confirm a planning storage choice." },
         { status: 400 },
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       {
         store: body.store,
         notice:
-          "This selects a separate fictional planning store. No records are moved or deleted.",
+          "Fictional planning is stored in this browser. No external records are moved or deleted.",
       },
       {
         headers: {

@@ -6,7 +6,7 @@ export function personalRecords(
   customer: string,
 ) {
   const scope = recordScope(mode, customer);
-  // JSON private-plan storage already persists atomically in Tiger. Generic demo
+  // Browser snapshot records use independent personal scopes. Generic demo
   // and Nessie metadata have separate source/customer keys and are never exposed
   // by collaborative payloads or attached to a fictional member's finances.
   const owner =

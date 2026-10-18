@@ -1,3 +1,8 @@
+# Current architecture notice
+
+The hackathon app now uses the [fixed browser-local snapshot](browser-snapshot-demo.md).
+Tiger setup below is historical production-adapter documentation and is not required.
+
 # Collaborative financial intelligence
 
 Vesta remains a personal financial intelligence app. Shared planning adds accountability without financial surveillance. All collaborative profiles and financial records are fictional fixtures, never Nessie transactions. The official logo and existing personal pages are preserved.

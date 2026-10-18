@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { DataType, newDb } from "pg-mem";
 import { Pool } from "pg";
-import { withDemo } from "../lib/collaboration/store";
+import { withDemo } from "../lib/collaboration/archive/database-store";
 
 test("PostgreSQL adapter round-trips relational planning records and isolates browser sessions", async () => {
   const database = newDb();

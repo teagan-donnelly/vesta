@@ -1,5 +1,5 @@
-// Headless, isolated browser session. Only explicitly selected local fictional
-// planning is written. No Nessie, Tiger or Backboard writes.
+// Headless, isolated browser session. Only browser-local fictional
+// planning is written. No bank or Backboard writes.
 import { chromium, expect } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -95,7 +95,7 @@ async function main() {
       .selectOption("Emergency");
     await dialog.getByRole("button", { name: "Confirm and save" }).click();
     await expect(dialog).toHaveCount(0);
-    await page
+    await page.locator(".record-list-item").filter({ hasText: "Browser QA emergency fund" })
       .getByRole("button", { name: "Record contribution", exact: true })
       .click();
     await dialog.getByLabel("Contribution (USD)", { exact: true }).fill("50");
@@ -114,7 +114,7 @@ async function main() {
       }),
     ).toHaveAttribute("aria-valuenow", "15");
     await page.goto(`${base}/plan?section=budget`);
-    await page.getByRole("button", { name: "Add budget", exact: true }).click();
+    await page.getByRole("row").filter({ hasText: "Monthly groceries" }).getByRole("button", { name: "Edit", exact: true }).click();
     await dialog
       .getByLabel("Name", { exact: true })
       .fill("Browser QA groceries budget");
@@ -157,13 +157,13 @@ async function main() {
       .fill(todayIso());
     await dialog.getByRole("button", { name: "Confirm and save" }).click();
     await expect(dialog).toHaveCount(0);
-    await expect(page.getByText("12.0%", { exact: true })).toBeVisible();
+    await expect(page.getByText("20.0%", { exact: true })).toBeVisible();
     await expect(
       page
         .locator(".record-metrics>div")
         .filter({ hasText: "Average known account age" })
         .locator("strong"),
-    ).toHaveText("—");
+    ).not.toHaveText("—");
     await page.goto(`${base}/plan?section=investing`);
     await page
       .getByRole("button", { name: "Add holding", exact: true })

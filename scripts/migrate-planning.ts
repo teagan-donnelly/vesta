@@ -1,6 +1,6 @@
 import { loadEnvConfig } from "@next/env";
 import { readFile } from "node:fs/promises";
-import { pool } from "../lib/collaboration/store";
+import { pool } from "../lib/collaboration/archive/database-store";
 import { databaseDiagnostic } from "../lib/collaboration/database-diagnostics";
 import type { Pool, PoolClient } from "pg";
 import { verifyDatabaseTls } from "../lib/collaboration/database-health";

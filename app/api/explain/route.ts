@@ -4,9 +4,10 @@ import { explain } from "@/lib/explanations";
 import type { Simulation } from "@/lib/types";
 import { applyPersonalRecords } from "@/lib/management";
 import { personalRecords } from "@/lib/collaboration/records";
-import { isIsoDate, todayIso } from "@/lib/analysis";
+import { isIsoDate } from "@/lib/analysis";
 import {
   fixtureData,
+  SNAPSHOT_DATE,
   personalData,
   profileId,
 } from "@/lib/collaboration/model";
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
             ? (() => {
                 const snapshot = fixtureData(
                   profileId(body.customer.slice(5)),
-                  todayIso(),
+                  SNAPSHOT_DATE,
                 );
                 snapshot.warnings.push(
                   "Shared planning is not included; the forecast excludes shared obligations and saved scenarios.",

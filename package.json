@@ -12,15 +12,15 @@
     "test:ui": "tsx scripts/ui-smoke.ts",
     "verify:integrations": "tsx scripts/verify-integrations.ts",
     "inspect:sandbox": "tsx scripts/inspect-sandbox.ts",
-    "db:migrate": "tsx scripts/migrate-planning.ts",
-    "verify:planning": "tsx scripts/verify-planning.ts",
+    "verify:planning": "tsx scripts/verify-snapshot.ts",
     "demo:smoke": "tsx scripts/demo-smoke.ts",
-    "verify:memory": "tsx scripts/verify-memory.ts"
+    "verify:memory": "tsx scripts/verify-memory.ts",
+    "db:migrate:archived": "tsx scripts/migrate-planning.ts",
+    "verify:tiger:archived": "tsx scripts/verify-planning.ts"
   },
   "dependencies": {
     "lucide-react": "^1.59.0",
     "next": "16.4.2",
-    "pg": "^8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "recharts": "^3.10.1"
@@ -39,6 +39,7 @@
     "pg-mem": "^3.0.14",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "pg": "^8.23.1"
   }
 }

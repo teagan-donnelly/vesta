@@ -11,9 +11,10 @@ import {
   validateSimulation,
 } from "../lib/collaboration/model";
 import { project, shift, subscriptionsFor } from "../lib/analysis";
-import { GET, POST } from "../app/api/collaboration/route";
+import { GET as rawGET, POST as rawPOST } from "../app/api/collaboration/route";
+import { browserRoute, browserWithDemo as withDemo } from "./snapshot-harness";
+const GET = browserRoute(rawGET), POST = browserRoute(rawPOST);
 import { GET as financialGET } from "../app/api/financial-data/route";
-import { withDemo } from "../lib/collaboration/store";
 
 process.env.VESTA_DEMO_DIR = join(
   process.cwd(),
@@ -333,7 +334,7 @@ test("private AI memory and conversation remain isolated; proposals require sepa
   assert.equal(state.memoryOptIn, false);
   assert.deepEqual(state.preferences, []);
 });
-test("local adapter serializes concurrent updates and persists across reads", async () => {
+test("browser-owned state retains independent updates across reads", async () => {
   const id = randomUUID();
   await Promise.all(
     Array.from({ length: 5 }, (_, i) =>

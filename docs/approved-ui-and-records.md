@@ -1,3 +1,8 @@
+# Current persistence notice
+
+The app now uses the [fixed browser-local snapshot](browser-snapshot-demo.md).
+The historical hosted temporary-storage limitation below no longer applies to this workflow.
+
 # Approved Vesta UI and connected personal records
 
 The approved full-size dashboard defines the ivory canvas, off-white panels,

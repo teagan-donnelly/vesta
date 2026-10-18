@@ -4,7 +4,7 @@ export interface ProfilePreferences {
   customer: string;
 }
 export const PROFILE_KEY = "vesta.profile.v1";
-export const DEFAULT_PROFILE = '{"mode":"demo","customer":""}';
+export const DEFAULT_PROFILE = '{"mode":"demo","customer":"demo:ava"}';
 export function parseProfile(value: string | null): ProfilePreferences {
   try {
     const raw = JSON.parse(value || DEFAULT_PROFILE);
@@ -12,11 +12,11 @@ export function parseProfile(value: string | null): ProfilePreferences {
       mode: raw?.mode === "nessie" ? "nessie" : "demo",
       customer:
         typeof raw?.customer === "string" && raw.customer.length <= 200
-          ? raw.customer
-          : "",
+          ? (raw.customer || (raw.mode === "nessie" ? "" : "demo:ava"))
+          : raw?.mode === "nessie" ? "" : "demo:ava",
     };
   } catch {
-    return { mode: "demo", customer: "" };
+    return { mode: "demo", customer: "demo:ava" };
   }
 }
 let memory = DEFAULT_PROFILE;

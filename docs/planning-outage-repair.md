@@ -1,3 +1,8 @@
+# Current architecture notice
+
+The hackathon app now uses the [fixed browser-local snapshot](browser-snapshot-demo.md).
+This database-outage investigation is retained for future production development.
+
 # Planning outage repair
 
 The production incident reproduced on October 17, 2026 at

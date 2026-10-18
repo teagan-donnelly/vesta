@@ -1,4 +1,5 @@
 "use client";
+import { snapshotFetch } from "@/lib/snapshot-client";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useFinancial } from "./financial-provider";
 import { Button, EmptyState } from "./ui";
@@ -42,14 +43,14 @@ export function useDemoPlanning(profile: string) {
     const controller = new AbortController();
     ensureDemoSession()
       .then(() =>
-        fetch(`/api/collaboration?profile=${profile}`, {
+        snapshotFetch(`/api/collaboration?profile=${profile}`, {
           signal: controller.signal,
           cache: "no-store",
         }),
       )
       .then(async (r) => {
         if (!r.ok)
-          throw Error("Planning unavailable. Check database configuration.");
+          throw Error("Fictional snapshot unavailable. Check browser storage.");
         return r.json();
       })
       .then((r) => {
@@ -71,7 +72,7 @@ export function useDemoPlanning(profile: string) {
       setBusyProfile(profile);
       setError("");
       try {
-        const r = await fetch(`/api/collaboration?profile=${profile}`, {
+        const r = await snapshotFetch(`/api/collaboration?profile=${profile}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...body, confirmed: true }),
@@ -103,7 +104,9 @@ export function DemoDisclosure({ storage }: { storage?: string }) {
       <summary>Demo data · privacy & storage</summary>
       <p>
         All profiles and activity are fictional. Switching profiles is not
-        authentication. Forecasts and members’ updates do not hold, reserve,
+        authentication. All three fictional profiles are stored on this browser;
+        privacy controls demonstrate selective disclosure within the app, not secure identity separation.
+        Forecasts and members’ updates do not hold, reserve,
         transfer, or confirm money. Storage: {storage || "checking"}.
       </p>
     </details>

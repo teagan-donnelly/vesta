@@ -1,6 +1,6 @@
 import { loadEnvConfig } from "@next/env";
 import { backboard } from "../lib/collaboration/backboard";
-import { pool, storageSource, withDemo } from "../lib/collaboration/store";
+import { pool, storageSource, withDemo } from "../lib/collaboration/archive/database-store";
 import { randomUUID } from "node:crypto";
 import { databaseDiagnostic } from "../lib/collaboration/database-diagnostics";
 import { verifyDatabaseTls } from "../lib/collaboration/database-health";

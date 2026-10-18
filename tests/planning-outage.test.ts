@@ -1,74 +1,83 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { join } from "node:path";
-import type { Pool } from "pg";
-import { GET as financial } from "../app/api/financial-data/route";
-import { GET as shared } from "../app/api/collaboration/route";
-import { GET as planning } from "../app/api/personal-planning/route";
-import { GET as session } from "../app/api/demo-session/route";
-import { POST as storage } from "../app/api/planning-storage/route";
-import { project } from "../lib/analysis";
+import { POST } from "../app/api/demo-snapshot/route";
+import { initialState, SNAPSHOT_DATE, type DemoState } from "../lib/collaboration/model";
+import { project, subscriptionsFor } from "../lib/analysis";
 
-test("production sequence: Tiger TLS failure stays isolated; explicit local selection restores shared planning for all profiles", async () => {
-  const globals = globalThis as typeof globalThis & { vestaPool?: Pool };
-  const previous = globals.vestaPool;
-  const env = { ...process.env };
-  let connections = 0;
-  globals.vestaPool = { connect: async () => {
-    connections++;
-    throw Object.assign(new Error("sensitive provider detail must not escape"), { code: "SELF_SIGNED_CERT_IN_CHAIN" });
-  } } as unknown as Pool;
-  process.env.TIGER_DATABASE_URL = "postgresql://fictional-test-only";
-  process.env.VERCEL = "1";
-  process.env.VESTA_DEMO_DIR = join(process.cwd(), ".tmp", `outage-${randomUUID()}`);
-  const cookie = `vesta-demo=${randomUUID()}`;
-  const request = (path: string, local = false) => new Request(`https://vesta.example${path}`, { headers: { cookie: cookie + (local ? "; vesta-demo-store=local" : "") } });
-  try {
-    assert.equal((await session(request("/api/demo-session"))).status, 200);
-    assert.equal(connections, 0, "cookie bootstrap cannot contact Tiger");
-    for (const profile of ["kevin", "ava", "maya", "kevin"]) {
-      const home = await financial(request(`/api/financial-data?mode=demo&customer=demo:${profile}`));
-      assert.equal(home.status, 200);
-      const base = await home.json();
-      assert.equal(base.source, "demo");
-      assert.equal(base.accounts.length, 1);
-      assert.ok(base.accounts.every((a: { customerId: string }) => a.customerId === profile));
-      assert.ok(base.warnings.some((w: string) => w.startsWith("Shared planning is not included")));
-      const before: number = connections;
-      assert.equal((await shared(request(`/api/collaboration?profile=${profile}`))).status, 503);
-      const overlay = await planning(request(`/api/personal-planning?profile=${profile}`));
-      assert.equal(overlay.status, 503);
-      assert.doesNotMatch(await overlay.text(), /sensitive provider/);
-      assert.equal(connections, before + 2);
-      assert.equal((await financial(request(`/api/financial-data?mode=demo&customer=demo:${profile}`))).status, 200);
-    }
-    const choose = await storage(new Request("https://vesta.example/api/planning-storage", {
-      method: "POST", headers: { origin: "https://vesta.example", "Content-Type": "application/json" },
-      body: JSON.stringify({ store: "local", confirmed: true }),
+test("Kevin → Domino → Shared → Ava survives stateless round trips with disclosure and baseline isolation", async () => {
+  const prior = process.env.TIGER_DATABASE_URL;
+  process.env.TIGER_DATABASE_URL = "postgresql://must-never-connect.invalid";
+  const session = randomUUID();
+  let state: DemoState | undefined;
+  async function call(path: string, body?: object) {
+    const response = await POST(new Request("https://vesta.example/api/demo-snapshot", {
+      method: "POST", headers: { origin: "https://vesta.example" },
+      body: JSON.stringify({ version: 1, session, state, path, method: body ? "POST" : "GET", body: body ? { ...body, confirmed: true } : undefined }),
     }));
-    assert.equal(choose.status, 200);
-    assert.match(choose.headers.get("set-cookie") || "", /vesta-demo-store=local/);
-    const beforeLocal = connections;
-    for (const profile of ["ava", "kevin", "maya"]) {
-      const workspace = await shared(request(`/api/collaboration?profile=${profile}`, true));
-      assert.equal(workspace.status, 200);
-      const value = await workspace.json();
-      assert.equal(value.profile, profile);
-      assert.match(value.storage, /Ephemeral local/);
-      if (profile === "maya") assert.deepEqual(value.workspaces, []);
-      const overlay = await planning(request(`/api/personal-planning?profile=${profile}`, true));
-      assert.equal(overlay.status, 200);
-      const data = await overlay.json();
-      assert.equal(data.accounts[0].customerId, profile);
-      assert.equal(data.bills.some((b: { id: string }) => b.id === "shared-rent"), profile !== "maya");
-      if (profile === "kevin") assert.equal(project(data).lowestBalanceCents, -1000);
-    }
-    assert.equal(connections, beforeLocal, "explicit local choice bypasses Tiger without changing the database");
-    delete process.env.NESSIE_API_KEY;
-    assert.equal((await financial(request("/api/financial-data?mode=nessie&customer=demo:kevin", true))).status, 502, "Nessie failures must never return demo fixtures");
-  } finally {
-    globals.vestaPool = previous;
-    process.env = env;
+    assert.equal(response.status, 200);
+    const value = await response.json();
+    assert.equal(value.status, 200);
+    // JSON serialization represents browser persistence and a fresh server call.
+    state = JSON.parse(JSON.stringify(value.state));
+    return value.result;
   }
+  try {
+    const before = await call("/api/personal-planning?profile=kevin");
+    assert.equal(before.source, "demo");
+    assert.equal(before.asOf, SNAPSHOT_DATE);
+    const baseline = project(before);
+    assert.equal(baseline.lowestBalanceCents, -1000);
+    assert.ok(before.bills.some((b: { id: string }) => b.id === "shared-rent"));
+    const spotify = subscriptionsFor(before).find(s => s.merchant === "Spotify")!;
+    assert.ok(subscriptionsFor(before).every(s => !/rent/i.test(s.merchant)));
+    await call("/api/collaboration?profile=kevin", { action: "scenario", simulation: { removedSubscriptions: [spotify.id] } });
+    const refreshed = await call("/api/personal-planning?profile=kevin");
+    assert.deepEqual(project(refreshed), baseline);
+    assert.equal(project(refreshed, refreshed.planningSimulation).lowestBalanceCents, 500);
+    let ava = await call("/api/collaboration?profile=ava");
+    let kevin = ava.workspaces[0].commitments[0].contributions.find((p: { profile: string }) => p.profile === "kevin");
+    assert.equal(kevin.scenarioStatus, "not shared");
+    assert.equal(kevin.coveredCents, undefined);
+    await call("/api/collaboration?profile=kevin", { action: "consent", workspaceId: "household", consent: { readiness: true, coverage: false, balance: false, expenseIds: [] } });
+    ava = await call("/api/collaboration?profile=ava");
+    kevin = ava.workspaces[0].commitments[0].contributions.find((p: { profile: string }) => p.profile === "kevin");
+    assert.equal(kevin.status, "may be at risk");
+    assert.equal(kevin.scenarioStatus, "appears achievable");
+    assert.equal(kevin.disclosedBalanceCents, undefined);
+    assert.equal(kevin.coveredCents, undefined);
+    assert.deepEqual(kevin.disclosedExpenses, []);
+    assert.deepEqual(ava.own.simulation, {});
+    assert.doesNotMatch(JSON.stringify(ava), /fictional-kevin|kevin-credit|kevin-Spotify/);
+    await call("/api/collaboration?profile=kevin", { action: "consent", workspaceId: "household", consent: { readiness: false, coverage: false, balance: false, expenseIds: [] } });
+    assert.equal((await call("/api/collaboration?profile=ava")).workspaces[0].commitments[0].contributions[1].scenarioStatus, "not shared");
+    for (const profile of ["ava", "kevin", "maya"]) {
+      const data = await call(`/api/financial-data?mode=demo&customer=demo:${profile}`);
+      assert.equal(data.asOf, SNAPSHOT_DATE);
+      assert.ok(data.accounts.every((a: { customerId: string }) => a.customerId === profile));
+      const records = await call(`/api/records?mode=demo&customer=demo:${profile}`);
+      assert.ok(records.records.some((r: { kind: string }) => r.kind === "credit"));
+      assert.ok(records.records.every((r: { id: string }) => r.id.startsWith(profile + "-")));
+      assert.ok((await call(`/api/collaboration?profile=${profile}`)).workspaces.length);
+    }
+    assert.deepEqual(initialState().plans.kevin.simulation, {}, "reset creates an untouched original snapshot");
+  } finally {
+    if (prior === undefined) delete process.env.TIGER_DATABASE_URL;
+    else process.env.TIGER_DATABASE_URL = prior;
+  }
+});
+
+test("snapshot transport rejects forged origins, paths, dates and remote resource IDs", async () => {
+  const session = randomUUID();
+  const state = initialState();
+  state.plans.kevin.assistantId = "someone-elses-assistant";
+  state.plans.kevin.assistantProof = "a".repeat(64);
+  const input = { version: 1, session, state, path: "/api/collaboration?profile=kevin", method: "GET" };
+  const request = (body: object, origin = "https://vesta.example") => new Request("https://vesta.example/api/demo-snapshot", { method: "POST", headers: { origin }, body: JSON.stringify(body) });
+  assert.equal((await POST(request(input, "https://attacker.example"))).status, 403);
+  assert.equal((await POST(request({ ...input, path: "https://attacker.example" }))).status, 400);
+  const result = await (await POST(request(input))).json();
+  assert.equal(result.state.plans.kevin.assistantId, undefined);
+  state.asOf = "2027-01-01";
+  assert.equal((await POST(request(input))).status, 400);
 });

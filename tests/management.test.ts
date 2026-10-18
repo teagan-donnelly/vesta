@@ -25,9 +25,12 @@ import {
   annualSubscriptionCost,
   monthlySubscriptionCost,
 } from "../lib/financial-view";
-import { GET, POST } from "../app/api/records/route";
-import { GET as planning } from "../app/api/personal-planning/route";
-import { GET as collaborative } from "../app/api/collaboration/route";
+import { GET as rawGET, POST as rawPOST } from "../app/api/records/route";
+import { browserRoute } from "./snapshot-harness";
+const GET = browserRoute(rawGET), POST = browserRoute(rawPOST);
+import { GET as rawPlanning } from "../app/api/personal-planning/route";
+import { GET as rawCollaborative } from "../app/api/collaboration/route";
+const planning = browserRoute(rawPlanning), collaborative = browserRoute(rawCollaborative);
 delete process.env.TIGER_DATABASE_URL;
 delete process.env.BACKBOARD_API_KEY;
 delete process.env.GEMINI_API_KEY;
@@ -55,7 +58,7 @@ test("manual transaction edits update totals/categories while preserving importe
   assert.equal(financialTotals(added).spending, totals.spending + 1250);
   assert.equal(
     spendingCategories(added).find((s) => s.name === "Groceries")?.value,
-    1250,
+    (spendingCategories(original).find(s => s.name === "Groceries")?.value || 0) + 1250,
   );
   assert.equal(
     added.transactions.find((t) => t.id === "manual:expense")?.provenance,
@@ -73,7 +76,7 @@ test("manual transaction edits update totals/categories while preserving importe
   assert.equal(financialTotals(edited).spending, totals.spending + 2500);
   assert.equal(
     spendingCategories(edited).some((s) => s.name === "Groceries"),
-    false,
+    true,
   );
   assert.equal(
     financialTotals(applyPersonalRecords(edited, [])).spending,
@@ -259,7 +262,7 @@ test("record scopes separate bank customers, generic demos and fictional profile
   personalRecords(state, "nessie", "customer-a").save([
     { ...transaction, id: "bank-note", label: "PRIVATE NESSIE NOTE" },
   ]);
-  assert.equal(personalRecords(state, "demo", "demo:ava").records.length, 0);
+  assert.ok(personalRecords(state, "demo", "demo:ava").records.every(r => r.id.startsWith("ava-")));
   assert.equal(
     personalRecords(state, "nessie", "customer-b").records.length,
     0,
@@ -337,7 +340,7 @@ test("record API persists edits, contributions, holdings history and private cro
     ).amountCents,
     -2400,
   );
-  assert.deepEqual((await (await GET(request("ava"))).json()).records, []);
+  assert.ok((await (await GET(request("ava"))).json()).records.every((r: PersonalRecord) => r.id.startsWith("ava-")));
   await save({
     id: "fund",
     kind: "goal",

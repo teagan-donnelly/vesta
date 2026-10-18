@@ -7,10 +7,9 @@ import {
   withDemo,
 } from "@/lib/collaboration/store";
 import { personalRecords } from "@/lib/collaboration/records";
-import { fixtureData, profileId } from "@/lib/collaboration/model";
+import { fixtureData, profileId, SNAPSHOT_DATE } from "@/lib/collaboration/model";
 import { demoData } from "@/lib/data";
 import { loadNessie } from "@/lib/nessie";
-import { todayIso } from "@/lib/analysis";
 import {
   holdingValue,
   recordScope,
@@ -87,7 +86,7 @@ export async function POST(request: Request) {
         mode === "nessie"
           ? await loadNessie(customer)
           : customer.startsWith("demo:")
-            ? fixtureData(profileId(customer.slice(5)), todayIso())
+            ? fixtureData(profileId(customer.slice(5)), SNAPSHOT_DATE)
             : demoData();
       if (
         body.record.kind === "annotation"

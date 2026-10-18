@@ -97,7 +97,7 @@ test("storage selection requires confirmation and origin checks, never silently 
   try {
     const result = await readPlanning(request);
     assert.equal(result.status, 200);
-    assert.match((await result.json()).storage, /Local fictional/);
+    assert.match((await result.json()).storage, /Browser-local fictional/);
     assert.equal(
       (await withDemo(id, (s) => s, false, true)).workspaces[0].id,
       "household",

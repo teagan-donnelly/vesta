@@ -1,4 +1,5 @@
 ﻿"use client";
+import { snapshotFetch } from "@/lib/snapshot-client";
 import Link from "next/link";
 import { useState } from "react";
 import { useFinancial } from "./financial-provider";
@@ -12,7 +13,7 @@ export function CollaborativeLink({ publish = false }: { publish?: boolean }) {
   async function apply() {
     setSaving(true);
     try {
-      const r = await fetch(`/api/collaboration?profile=${customer.slice(5)}`, {
+      const r = await snapshotFetch(`/api/collaboration?profile=${customer.slice(5)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

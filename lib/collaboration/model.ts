@@ -1,3 +1,4 @@
+import { snapshotRecords } from "./snapshot-records";
 import type { FinancialData, Simulation } from "../types";
 import { applyPersonalRecords, type PersonalRecord } from "../management";
 import {
@@ -6,7 +7,6 @@ import {
   project,
   shift,
   subscriptionsFor,
-  todayIso,
 } from "../analysis";
 
 export const profiles = [
@@ -42,6 +42,7 @@ export type PrivatePlan = {
   memoryOptIn: boolean;
   preferences: string[];
   assistantId?: string;
+  assistantProof?: string;
   messages: { role: "user" | "assistant"; content: string }[];
 };
 export type DemoState = {
@@ -81,7 +82,9 @@ export function profileId(value: unknown): ProfileId {
     throw new Error("Choose a fictional demo profile.");
   return value as ProfileId;
 }
-export function initialState(asOf = todayIso()): DemoState {
+export const SNAPSHOT_AT = "2026-10-17T12:00:00.000Z";
+export const SNAPSHOT_DATE = SNAPSHOT_AT.slice(0, 10);
+export function initialState(asOf = SNAPSHOT_DATE): DemoState {
   return {
     asOf,
     workspaces: [
@@ -92,6 +95,7 @@ export function initialState(asOf = todayIso()): DemoState {
         owner: "ava",
         members: ["ava", "kevin"],
       },
+      { id: "cedar", name: "Cedar Lane household", kind: "Household", owner: "maya", members: ["maya"] },
     ],
     commitments: [
       {
@@ -117,12 +121,17 @@ export function initialState(asOf = todayIso()): DemoState {
           },
         ],
       },
+      {
+        id: "maya-rent", workspaceId: "cedar", owner: "maya", name: "Cedar Lane rent",
+        amountCents: 110000, dueDate: shift(asOf, 10), recurring: true,
+        contributions: [{ profile: "maya", expectedCents: 110000, reportedCents: 0, agreed: true }],
+      },
     ],
     consents: {},
     plans: {
-      ava: privateDefault(),
-      kevin: privateDefault(),
-      maya: privateDefault(),
+      ava: { ...privateDefault(), recordSets: { "demo:demo:ava": snapshotRecords("ava", asOf) } },
+      kevin: { ...privateDefault(), recordSets: { "demo:demo:kevin": snapshotRecords("kevin", asOf) } },
+      maya: { ...privateDefault(), recordSets: { "demo:demo:maya": snapshotRecords("maya", asOf) } },
     },
     history: [],
   };
@@ -156,8 +165,8 @@ export function fixtureData(profile: ProfileId, asOf: string): FinancialData {
         name: profiles.find((p) => p.id === profile)!.name,
         location: "Fictional",
         household: "Demo",
-        incomeCents: 0,
-        monthlyBudgetCents: 0,
+        incomeCents: profile === "kevin" ? 360000 : profile === "ava" ? 480000 : 420000,
+        monthlyBudgetCents: profile === "kevin" ? 220000 : 280000,
       },
     ],
     accounts: [
@@ -166,7 +175,7 @@ export function fixtureData(profile: ProfileId, asOf: string): FinancialData {
         customerId: profile,
         name: "Fictional checking",
         type: "Checking",
-        balanceCents: profile === "kevin" ? 128000 : 300000,
+        balanceCents: profile === "kevin" ? 128000 : profile === "ava" ? 300000 : 245000,
         institution: "Local fictional fixture — not Nessie",
       },
     ],
@@ -231,10 +240,27 @@ export function fixtureData(profile: ProfileId, asOf: string): FinancialData {
       category: "Income",
       description: "Expected payroll — not guaranteed",
       date: shift(asOf, day),
-      amountCents: 180000,
+      amountCents: profile === "kevin" ? 180000 : profile === "ava" ? 240000 : 210000,
       pending: true,
       fictional: true,
     });
+  // Cleared history supports activity, income and category views without
+  // replaying these amounts against the snapshot's closing account balance.
+  for (let week = 0; week < 8; week++) {
+    data.transactions.push({
+      id: `${profile}-groceries-${week}`, accountId, merchant: "Maple Market",
+      category: "Groceries", description: "Fictional cleared grocery purchase",
+      date: shift(asOf, -3 - week * 7), amountCents: -(6300 + week * 237), fictional: true,
+    });
+  }
+  for (const day of [-14, -28, -42, -56]) {
+    data.transactions.push({
+      id: `${profile}-cleared-payroll-${-day}`, accountId, merchant: "Fictional employer",
+      category: "Income", description: "Fictional cleared payroll",
+      date: shift(asOf, day), amountCents: profile === "kevin" ? 180000 : profile === "ava" ? 240000 : 210000,
+      fictional: true,
+    });
+  }
   return data;
 }
 export function personalData(s: DemoState, profile: ProfileId) {

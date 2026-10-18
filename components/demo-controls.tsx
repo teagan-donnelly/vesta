@@ -1,4 +1,5 @@
 "use client";
+import { snapshotFetch } from "@/lib/snapshot-client";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useFinancial } from "./financial-provider";
@@ -19,7 +20,7 @@ export function DemoControls() {
     const load = () =>
       ensureDemoSession()
         .then(() =>
-          fetch(`/api/collaboration?profile=${viewer}&list=1`, {
+          snapshotFetch(`/api/collaboration?profile=${viewer}&list=1`, {
             signal: controller.signal,
             cache: "no-store",
           }),
@@ -83,6 +84,7 @@ export function DemoControls() {
           <option value="new">Create shared workspace…</option>
         </select>
       </label>
+      <span className="subtext">Fictional snapshot · Oct 17, 2026, 12:00 UTC · not Nessie</span>
     </div>
   );
 }

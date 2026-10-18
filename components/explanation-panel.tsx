@@ -1,4 +1,5 @@
 ﻿"use client";
+import { snapshotFetch } from "@/lib/snapshot-client";
 import { useState } from "react";
 import { useFinancial } from "./financial-provider";
 import { explanationFacts } from "@/lib/explanation-facts";
@@ -45,7 +46,7 @@ export function ExplanationPanel({ scenario = false }: { scenario?: boolean }) {
             setBusy(true);
             setError("");
             try {
-              const response = await fetch("/api/explain", {
+              const response = await snapshotFetch("/api/explain", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ mode, customer, simulation: applied, personalOnly: data?.warnings.some((w) => w.startsWith("Shared planning is not included")) }),

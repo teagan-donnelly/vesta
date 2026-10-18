@@ -1,7 +1,7 @@
 import { demoData } from "@/lib/data";
 import { loadNessie } from "@/lib/nessie";
-import { fixtureData, profileId } from "@/lib/collaboration/model";
-import { todayIso } from "@/lib/analysis";
+import { personalData, profileId } from "@/lib/collaboration/model";
+import { withDemo, demoSession } from "@/lib/collaboration/store";
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const mode = params.get("mode") || "demo";
@@ -10,8 +10,7 @@ export async function GET(request: Request) {
   try {
     if (mode === "demo" && params.get("customer")?.startsWith("demo:")) {
       const viewer = profileId(params.get("customer")!.slice(5));
-      const data = fixtureData(viewer, todayIso());
-      data.warnings.push("Shared planning is not included. Shared obligations and saved scenarios require a successful planning connection.");
+      const data = await withDemo(demoSession(request).id, s => ({ ...personalData(s, viewer), planningSimulation: s.plans[viewer].simulation }));
       return Response.json(data, { headers: { "Cache-Control": "no-store" } });
     }
     return Response.json(

@@ -3,6 +3,8 @@
 import assert from "node:assert/strict";
 const base = process.env.DEMO_BASE_URL || "http://localhost:3000";
 let cookie = "";
+let snapshot: unknown;
+const snapshotSession = crypto.randomUUID();
 const jar = new Map<string, string>();
 function remember(response: Response) {
   for (const item of response.headers.getSetCookie()) {
@@ -13,17 +15,20 @@ function remember(response: Response) {
   cookie = [...jar].map(([k, v]) => `${k}=${v}`).join("; ");
 }
 async function api(profile: string, body?: Record<string, unknown>) {
-  const r = await fetch(`${base}/api/collaboration?profile=${profile}`, {
-    method: body ? "POST" : "GET",
+  const response = await fetch(`${base}/api/demo-snapshot`, {
+    method: "POST",
     headers: {
       ...(cookie ? { cookie } : {}),
       origin: new URL(base).origin,
       "Content-Type": "application/json",
     },
-    ...(body ? { body: JSON.stringify({ ...body, confirmed: true }) } : {}),
+    body: JSON.stringify({ version: 1, session: snapshotSession, state: snapshot, path: `/api/collaboration?profile=${profile}`, method: body ? "POST" : "GET", body: body ? { ...body, confirmed: true } : undefined }),
   });
-  remember(r);
-  const value = await r.json();
+  assert.equal(response.status, 200);
+  const envelope = await response.json();
+  snapshot = envelope.state;
+  const r = Response.json(envelope.result, { status: envelope.status });
+  const value = envelope.result;
   console.log(`Demo ${profile}: ${body?.action || "read"} → HTTP ${r.status}`);
   if (value.assistant)
     console.log(

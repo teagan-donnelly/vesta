@@ -105,9 +105,9 @@ test("educational utilization does not invent a score or divide by zero", () => 
   assert.equal(utilizationPercent(-1, 1000), null);
 });
 test("profile parser tolerates malformed preferences and keeps only mode and customer ID", () => {
-  assert.deepEqual(parseProfile("{invalid"), { mode: "demo", customer: "" });
-  assert.deepEqual(parseProfile(null), { mode: "demo", customer: "" });
-  assert.deepEqual(parseProfile("null"), { mode: "demo", customer: "" });
+  assert.deepEqual(parseProfile("{invalid"), { mode: "demo", customer: "demo:ava" });
+  assert.deepEqual(parseProfile(null), { mode: "demo", customer: "demo:ava" });
+  assert.deepEqual(parseProfile("null"), { mode: "demo", customer: "demo:ava" });
   assert.deepEqual(
     parseProfile('{"mode":"nessie","customer":"c1","unexpected":"discard"}'),
     { mode: "nessie", customer: "c1" },

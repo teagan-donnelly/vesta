@@ -1,4 +1,5 @@
 ﻿"use client";
+import { snapshotFetch } from "@/lib/snapshot-client";
 import {
   createContext,
   useContext,
@@ -70,7 +71,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     if (mode === "nessie" && !customer) return () => controller.abort();
     void ensureDemoSession()
       .then(() =>
-        fetch(
+        snapshotFetch(
           `/api/records?mode=${mode}&customer=${encodeURIComponent(customer)}`,
           { cache: "no-store", signal: controller.signal },
         ),
@@ -114,7 +115,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
       .then(async () => {
         if (activeProfile.current !== preferences)
           throw Error("Profile changed. Retry in the intended profile.");
-        const response = await fetch(
+        const response = await snapshotFetch(
           `/api/records?mode=${mode}&customer=${encodeURIComponent(customer)}`,
           {
             method: "POST",
@@ -170,7 +171,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     const revision = draftRevision.current;
     Promise.resolve()
       .then(() =>
-        fetch(
+        snapshotFetch(
           `/api/financial-data?mode=${mode}&customer=${encodeURIComponent(customer)}`,
           { signal: controller.signal, cache: "no-store" },
         ),
@@ -207,7 +208,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
           void ensureDemoSession()
             .then(() => {
               if (controller.signal.aborted) return null;
-              return fetch(
+              return snapshotFetch(
                 `/api/personal-planning?profile=${encodeURIComponent(customer.slice(5))}`,
                 {
                   signal: controller.signal,
@@ -331,20 +332,9 @@ export function DataStatus() {
     mode,
     customer,
     setCustomer,
-    recordsStorage,
   } = useFinancial();
   return (
     <>
-      {/Ephemeral/i.test(recordsStorage) && (
-        <Notice tone="caution">
-          <p>
-            Temporary online demo: tracked records can reset after a refresh.
-            For records you need to keep, use a working planning database or the
-            localhost app. <Link href="/settings">Review planning storage</Link>
-            .
-          </p>
-        </Notice>
-      )}
       {loading && data && (
         <p role="status" className="refresh-status">
           Updating financial information...

@@ -95,7 +95,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         error:
-          "Fictional planning unavailable. Check profile and database setup.",
+          "Fictional planning unavailable. Check profile and browser snapshot.",
       },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
