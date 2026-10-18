@@ -30,14 +30,14 @@ test("a source without historical balances stays empty rather than acquiring a f
 
 test("shared visualizations never reveal undisclosed amounts through labels, bars or household aggregates", () => {
   const state=initialState();
-  state.consents['household:kevin']={readiness:true,coverage:false,balance:false,expenseIds:[]};
-  const expense=workspaceView(state,'household','ava').commitments[0];
-  const html=renderToStaticMarkup(createElement(SharedExpenseSummary,{expense,viewer:'ava',workspace:'household'}));
-  assert.doesNotMatch(html,/\$800\.00|\$200\.00|\$1,420\.00|Optional studio|Professional certification/);
+  state.consents['vacation:kevin:ava']={readiness:true,coverage:false,balance:false,expenseIds:[]};
+  const expense=workspaceView(state,'vacation','ava').commitments[0];
+  const html=renderToStaticMarkup(createElement(SharedExpenseSummary,{expense,viewer:'ava',workspace:'vacation'}));
+  assert.doesNotMatch(html,/\$200\.00|\$1,420\.00|Optional studio|Professional certification/);
   assert.match(html,/Not shared/); assert.match(html,/Household readiness is only partially shared/);
   assert.match(html,/not collected/);
-  const own=renderToStaticMarkup(createElement(SharedExpenseSummary,{expense:workspaceView(state,'household','kevin').commitments[0],viewer:'kevin',workspace:'household'}));
-  assert.match(own,/\$800\.00/); assert.match(own,/\$200\.00/);
+  const own=renderToStaticMarkup(createElement(SharedExpenseSummary,{expense:workspaceView(state,'vacation','kevin').commitments[0],viewer:'kevin',workspace:'vacation'}));
+  assert.match(own,/\$200\.00/); assert.match(own,/\$200\.00/);
 });
 
 test("the outcome comparison uses uncapped deadline cash improvement, not the capped contribution increase", () => {

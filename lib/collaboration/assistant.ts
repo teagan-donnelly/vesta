@@ -117,6 +117,8 @@ export async function assistant(
       coverage(s, profile).get(`${c.id}:${c.dueDate}`)?.status ===
       "may be at risk",
   );
+  const rent = myCommitments.find(c=>/rent|alquiler/i.test(c.name));
+  const riskFocus = /afford.*rent|can.*rent|alquiler/i.test(question) && !/vacation|vacaciones/i.test(question) ? rent || risk : risk;
   const excluded = [
     ...(data.planningPreferences || []),
     ...(plan.memoryOptIn ? plan.preferences : []),
@@ -139,7 +141,7 @@ export async function assistant(
       question,
     )
   )
-    intent = "shared";
+    intent = /vacation|holiday|vacaciones/i.test(question) ? "options" : "shared";
   if (
     /gym|fitness|gimnasio/i.test(question) &&
     /keep|non.negotiable|mantener|conservar/i.test(question)
@@ -153,6 +155,7 @@ export async function assistant(
     /what happens|what if|qué pasa|simul/i.test(question)
   )
     intent = "simulate";
+  if (/vacation|holiday|vacaciones/i.test(question) && /help|solution|option|resolve|cover|protect/i.test(question)) intent = "options";
   let proposal: {
     simulation: Simulation;
     label: string;
@@ -161,7 +164,7 @@ export async function assistant(
   } | null = null;
   let reply = "";
   if (intent === "shared") {
-    const commitment = myCommitments[0];
+    const commitment = /vacation|vacaciones/i.test(question) ? risk || myCommitments[0] : myCommitments[0];
     const own = commitment?.contributions.find((a) => a.profile === profile);
     const estimate = commitment
       ? coverage(s, profile, true).get(`${commitment.id}:${commitment.dueDate}`)
@@ -205,21 +208,29 @@ export async function assistant(
     const spanishOption = best?.simulation.delayDays
       ? "Posponer la compra opcional hasta después del próximo ingreso, sin retrasar pagos obligatorios."
       : best?.simulation.paymentCents !== undefined
-        ? "Reducir la compra opcional y revisar un servicio recurrente antes del alquiler."
-        : "Revisar un servicio recurrente antes del alquiler; esto no cancela el servicio.";
+        ? "Reducir la compra opcional y revisar un servicio recurrente antes de la fecha límite compartida."
+        : "Revisar un servicio recurrente antes de la fecha límite compartida; esto no cancela el servicio.";
     if (best) proposal = { simulation: best.simulation, label: best.label, beforeCents: best.beforeCents, afterCents: best.afterCents };
     reply = spanish
       ? `${/gym|fitness|gimnasio/i.test(excluded) ? "Respetamos tu preferencia de mantener el gimnasio. " : ""}${best ? `${spanishOption} El saldo mínimo cambia de ${formatCurrency(best.beforeCents)} a ${formatCurrency(best.afterCents)}; ${best.shortfallCents === 0 ? "tu aporte parece cubierto" : `faltan ${formatCurrency(best.shortfallCents)}`} antes del ${best.dueDate}. Confirma solo si deseas aplicar este plan hipotético.` : "Tu plan guardado no muestra un aporte compartido en riesgo. Revisa el pronóstico antes de cambiar tus gastos."}`
-      : `${/gym|fitness|gimnasio/i.test(excluded) ? "Your preference to keep the gym is respected. " : ""}${best ? `${best.description} Your lowest balance changes from ${formatCurrency(best.beforeCents)} to ${formatCurrency(best.afterCents)}. Your rent share ${best.shortfallCents === 0 ? "looks covered" : `still has a ${formatCurrency(best.shortfallCents)} gap`} by ${best.dueDate}. ${choices[1] ? `Another option: ${choices[1].description} Its lowest balance is ${formatCurrency(choices[1].afterCents)}.` : ""} Confirm separately to apply a hypothetical plan.` : "Your saved plan does not show a shared contribution gap. You can still explore individual services in Forecast."}`;
+      : `${/gym|fitness|gimnasio/i.test(excluded) ? "Your preference to keep the gym is respected. " : ""}${best ? `${best.description} Your lowest balance changes from ${formatCurrency(best.beforeCents)} to ${formatCurrency(best.afterCents)}. Your shared contribution ${best.shortfallCents === 0 ? "looks covered" : `still has a ${formatCurrency(best.shortfallCents)} gap`} by ${best.dueDate}. ${choices[1] ? `Another option: ${choices[1].description} Its lowest balance is ${formatCurrency(choices[1].afterCents)}.` : ""} Confirm separately to apply a hypothetical plan.` : "Your saved plan does not show a shared contribution gap. You can still explore individual services in Forecast."}`;
   }
   else if (intent === "risk")
     reply = spanish
       ? `El saldo mínimo base es ${formatCurrency(baseline.lowestBalanceCents)} el ${baseline.lowestBalanceDate}. ${risk ? `${risk.name} vence el ${risk.dueDate} y tu aporte puede estar en riesgo.` : "Revisa tus compromisos y sus fechas."} Los ingresos futuros no están garantizados. ¿Exploramos ajustes?`
-      : `Your original outlook reaches ${formatCurrency(baseline.lowestBalanceCents)} on ${baseline.lowestBalanceDate}. ${risk ? (() => { const estimate = paymentReadiness(data, `bill:shared-${risk.id}`); const own = risk.contributions.find(a => a.profile === profile)!; return `${risk.name} is due ${risk.dueDate}: your share is ${formatCurrency(own.expectedCents)}, with ${formatCurrency(estimate?.coveredCents || 0)} estimated available and a ${formatCurrency(estimate?.shortfallCents || 0)} gap. The saved what-if low is ${formatCurrency(simulated.lowestBalanceCents)}.`; })() : "Review your commitments and due dates."} Future income is not guaranteed. Shall we explore adjustments?`;
+      : `Your original outlook reaches ${formatCurrency(baseline.lowestBalanceCents)} on ${baseline.lowestBalanceDate}. ${risk ? (() => { const estimate = paymentReadiness(data, `bill:shared-${riskFocus!.id}`); const own = riskFocus!.contributions.find(a => a.profile === profile)!; return `${riskFocus!.name} is due ${riskFocus!.dueDate}: your share is ${formatCurrency(own.expectedCents)}, with ${formatCurrency(estimate?.coveredCents || 0)} estimated available and a ${formatCurrency(estimate?.shortfallCents || 0)} gap. The saved what-if low is ${formatCurrency(simulated.lowestBalanceCents)}.`; })() : "Review your commitments and due dates."} Future income is not guaranteed. Shall we explore adjustments?`;
   else
     reply = spanish
       ? "¿Quieres revisar el riesgo de alquiler, simular Spotify, proteger tu privacidad o aprender un término financiero? Solo puedo analizar tus propios datos ficticios."
       : "Would you like to review rent risk, simulate Spotify, discuss privacy, or explain a financial term? I can only analyze your own fictional data.";
+  if (risk?.workspaceId === "vacation" && rent && (intent === "options" || intent === "risk")) {
+    const own = rent.contributions.find(a=>a.profile===profile)!;
+    const ready = coverage(s,profile).get(`${rent.id}:${rent.dueDate}`);
+    const trip = risk.contributions.find(a=>a.profile===profile)!;
+    reply += spanish
+      ? ` Tu aporte de alquiler de ${formatCurrency(own.expectedCents)} para ${rent.dueDate} ${ready?.status === "appears achievable" ? "parece cubierto" : "debe revisarse"} y ya se descuenta antes de calcular el ahorro para vacaciones. La meta compartida es ${formatCurrency(risk.amountCents)}; tu parte es ${formatCurrency(trip.expectedCents)} para ${risk.dueDate}.`
+      : ` Your ${formatCurrency(own.expectedCents)} rent contribution by ${rent.dueDate} ${ready?.status === "appears achievable" ? "looks covered" : "needs review"} and is already deducted before vacation readiness. The shared vacation target is ${formatCurrency(risk.amountCents)}; your agreed share is ${formatCurrency(trip.expectedCents)} by ${risk.dueDate}.`;
+  }
   plan.messages = [
     ...plan.messages,
     { role: "user" as const, content: question },

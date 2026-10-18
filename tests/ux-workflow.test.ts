@@ -29,17 +29,18 @@ test("Home warning uses the actual forecast and carries the affected payment to 
   const risk = financialWarning(personalData(state, "kevin"))!;
   assert.equal(risk.shortfallCents, 20000);
   assert.equal(risk.date, "2026-10-27");
-  assert.equal(risk.label, "Monthly rent");
+  assert.equal(risk.label, "Vacation savings");
   const query = new URL(risk.href, "http://localhost").searchParams;
-  assert.equal(query.get("commitment"), "rent");
-  assert.equal(query.get("event"), "bill:shared-rent");
+  assert.equal(query.get("commitment"), "vacation");
+  assert.equal(query.get("event"), "bill:shared-vacation");
   assert.equal(query.get("section"), "forecast");
   assert.equal(financialWarning(personalData(state, "ava")), null);
 });
 test("simplified shared summary uses authorized statuses without revealing another member's private amounts", () => {
   const state = initialState("2026-10-17");
   state.plans.kevin.preferences = ["Private gym preference"];
-  const expense = workspaceView(state, "household", "ava").commitments[0];
+  state.consents["vacation:kevin:ava"]={readiness:false,coverage:false,balance:false,expenseIds:[]};
+  const expense = workspaceView(state, "vacation", "ava").commitments[0];
   const html = renderToStaticMarkup(
     createElement(SharedExpenseSummary, {
       expense,
@@ -134,8 +135,8 @@ test("roommate questions explain the user's own contribution without exposing an
     "en",
     "test-kevin",
   );
-  assert.match(result.reply, /\$1,000.00/);
-  assert.match(result.reply, /private/);
+  assert.match(result.reply, /\$600.00/);
+  assert.match(result.reply, /information you chose to share/);
   assert.ok(!result.reply.includes("AVA PRIVATE"));
   assert.deepEqual(state.plans.kevin.simulation, {});
 });

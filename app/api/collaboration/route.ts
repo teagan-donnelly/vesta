@@ -64,6 +64,7 @@ export function payload(s: DemoState, viewer: ProfileId, forceLocal = false) {
     },
     context: {
       risk: financialWarning(personalData(s, viewer)),
+      obligations: s.commitments.filter(c=>c.contributions.some(a=>a.profile===viewer)).map(c=>({id:c.id,workspaceId:c.workspaceId,name:c.name,dueDate:c.dueDate,shareCents:c.contributions.find(a=>a.profile===viewer)!.expectedCents,coveredCents:coverage(s,viewer).get(`${c.id}:${c.dueDate}`)?.coveredCents ?? null})),
       preferences: personalData(s, viewer).planningPreferences || [],
       options: planningOptions(personalData(s, viewer), plan.simulation, plan.preferences),
     },
@@ -259,10 +260,14 @@ export async function POST(request: Request) {
             )
           )
             throw new Error("Choose only your own expenses.");
-          s.consents[`${w.id}:${viewer}`] = {
+          const recipient = body.recipient ? profileId(body.recipient) : undefined;
+          if (recipient && (recipient === viewer || !w.members.includes(recipient))) throw Error("Choose another workspace member.");
+          s.consents[recipient ? `${w.id}:${viewer}:${recipient}` : `${w.id}:${viewer}`] = {
             readiness: body.consent.readiness === true,
             coverage: body.consent.coverage === true,
             balance: body.consent.balance === true,
+            bills: body.consent.bills === true,
+            projection: body.consent.projection === true,
             expenseIds: [...new Set<string>(body.consent.expenseIds)],
           };
         } else if (action === "scenario") {

@@ -12,7 +12,7 @@ export function DemoGate({
   children: (profile: string) => ReactNode;
 }) {
   const { mode, customer, setDemoProfile } = useFinancial();
-  if (mode !== "demo" || !/^demo:(ava|kevin|maya)$/.test(customer))
+  if (mode !== "demo" || !/^demo:(ava|kevin|maya|noah|lily)$/.test(customer))
     return (
       <EmptyState
         title="Explore fictional collaborative planning"

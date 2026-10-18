@@ -14,12 +14,16 @@ export const profiles = [
   { id: "ava", name: "Ava" },
   { id: "kevin", name: "Kevin" },
   { id: "maya", name: "Maya" },
-];
-export type ProfileId = "ava" | "kevin" | "maya";
+  { id: "noah", name: "Noah" },
+  { id: "lily", name: "Lily" },
+] as const;
+export type ProfileId = "ava" | "kevin" | "maya" | "noah" | "lily";
 export type Consent = {
   readiness: boolean;
   coverage: boolean;
   balance: boolean;
+  bills?: boolean;
+  projection?: boolean;
   expenseIds: string[];
 };
 export type Commitment = {
@@ -88,54 +92,27 @@ export const SNAPSHOT_AT = "2026-10-17T12:00:00.000Z";
 export const SNAPSHOT_DATE = SNAPSHOT_AT.slice(0, 10);
 export function initialState(asOf = SNAPSHOT_DATE): DemoState {
   return {
-    snapshotRevision: 2,
+    snapshotRevision: 3,
     asOf,
     workspaces: [
-      {
-        id: "household",
-        name: "Maple Street household",
-        kind: "Household",
-        owner: "ava",
-        members: ["ava", "kevin"],
-      },
-      { id: "cedar", name: "Cedar Lane household", kind: "Household", owner: "maya", members: ["maya"] },
+      { id: "household", name: "Maple Street Roommates", kind: "Household", owner: "kevin", members: ["kevin", "maya", "noah", "lily"] },
+      { id: "vacation", name: "Kevin & Ava — Vacation", kind: "Couple", owner: "kevin", members: ["kevin", "ava"] },
     ],
     commitments: [
-      {
-        id: "rent",
-        workspaceId: "household",
-        owner: "ava",
-        name: "Monthly rent",
-        amountCents: 200000,
-        dueDate: shift(asOf, 10),
-        recurring: true,
-        contributions: [
-          {
-            profile: "ava",
-            expectedCents: 100000,
-            reportedCents: 100000,
-            agreed: true,
-          },
-          {
-            profile: "kevin",
-            expectedCents: 100000,
-            reportedCents: 0,
-            agreed: true,
-          },
-        ],
-      },
-      {
-        id: "maya-rent", workspaceId: "cedar", owner: "maya", name: "Cedar Lane rent",
-        amountCents: 110000, dueDate: shift(asOf, 10), recurring: true,
-        contributions: [{ profile: "maya", expectedCents: 110000, reportedCents: 0, agreed: true }],
-      },
+      { id: "rent", workspaceId: "household", owner: "kevin", name: "Monthly rent", amountCents: 240000, dueDate: shift(asOf,8), recurring: true,
+        contributions: (["kevin", "maya", "noah", "lily"] as ProfileId[]).map(profile=>({profile, expectedCents:60000, reportedCents:60000, agreed:true})) },
+      { id: "utilities", workspaceId: "household", owner: "kevin", name: "Shared electric utility", amountCents:40000, dueDate:shift(asOf,2), recurring:true,
+        contributions: (["kevin", "maya", "noah", "lily"] as ProfileId[]).map(profile=>({profile, expectedCents:10000, reportedCents:10000, agreed:true})) },
+      { id: "vacation", workspaceId:"vacation", owner:"kevin", name:"Vacation savings", amountCents:80000, dueDate:shift(asOf,10), recurring:false,
+        contributions: (["kevin", "ava"] as ProfileId[]).map(profile=>({profile, expectedCents:40000, reportedCents:0, agreed:true})) },
     ],
-    consents: {},
-    plans: {
-      ava: { ...privateDefault(), recordSets: { "demo:demo:ava": snapshotRecords("ava", asOf) } },
-      kevin: { ...privateDefault(), recordSets: { "demo:demo:kevin": snapshotRecords("kevin", asOf) } },
-      maya: { ...privateDefault(), recordSets: { "demo:demo:maya": snapshotRecords("maya", asOf) } },
+    consents: {
+      ...Object.fromEntries((["kevin", "maya", "noah", "lily"] as ProfileId[]).map(p=>[`household:${p}`,{...consentDefault(),readiness:true}])),
+      "household:maya:kevin": {...consentDefault(),readiness:true,balance:true},
+      "vacation:kevin:ava": {...consentDefault(),readiness:true,coverage:true,balance:true,bills:true,projection:true},
+      "vacation:ava:kevin": {...consentDefault(),readiness:true,coverage:true,balance:true,bills:true,projection:true},
     },
+    plans: Object.fromEntries(profiles.map(p=>[p.id,{...privateDefault(),recordSets:{[`demo:demo:${p.id}`]:snapshotRecords(p.id,asOf)}}])) as Record<ProfileId,PrivatePlan>,
     history: [],
   };
 }
@@ -154,7 +131,9 @@ export function consentFor(
   s: DemoState,
   workspaceId: string,
   member: ProfileId,
+  recipient?: ProfileId,
 ) {
+  if (recipient && s.consents[`${workspaceId}:${member}:${recipient}`]) return s.consents[`${workspaceId}:${member}:${recipient}`];
   return s.consents[`${workspaceId}:${member}`] || consentDefault();
 }
 export const fixtureData = financialSnapshot;
@@ -163,10 +142,12 @@ export function personalData(s: DemoState, profile: ProfileId) {
   for (const c of s.commitments) {
     const assignment = c.contributions.find((a) => a.profile === profile);
     if (!assignment) continue;
+    const utilityName = c.id === "utilities" ? data.bills.find(b=>b.id === "utility")?.name : undefined;
+    if (c.id === "utilities") data.bills = data.bills.filter(b=>b.id !== "utility");
     data.bills.push({
       id: `shared-${c.id}`,
       accountId: data.accounts[0].id,
-      name: c.name,
+      name: utilityName || c.name,
       dueDate: c.dueDate,
       amountCents: assignment.expectedCents,
       category: "Shared obligation",
@@ -221,7 +202,7 @@ export function workspaceView(
     .filter((c) => c.workspaceId === workspaceId)
     .map((c) => {
       const contributions = c.contributions.map((a) => {
-        const consent = consentFor(s, workspaceId, a.profile);
+        const consent = consentFor(s, workspaceId, a.profile, viewer);
         const own = viewer === a.profile;
         const base = coverage(s, a.profile).get(`${c.id}:${c.dueDate}`);
         const simulated = coverage(s, a.profile, true).get(
@@ -253,6 +234,8 @@ export function workspaceView(
                   .balanceCents,
               }
             : {}),
+          ...(consent.bills ? {disclosedBills: forecastEvents(personalData(s,a.profile)).filter(e=>e.amountCents<0).map(e=>({id:e.id,name:e.label,dueDate:e.date,amountCents:-e.amountCents}))} : {}),
+          ...(consent.projection ? {disclosedProjection: project(personalData(s,a.profile),s.plans[a.profile].simulation).points.map(p=>({date:p.date,balanceCents:p.balanceCents}))} : {}),
           disclosedExpenses: personalData(s, a.profile)
             .transactions.filter((t) => consent.expenseIds.includes(t.id))
             .map((t) => ({
@@ -275,6 +258,7 @@ export function workspaceView(
       return {
         ...c,
         contributions,
+        health: contributions.some(a=>a.scenarioStatus === "may be at risk") ? "At Risk" : contributions.every(a=>a.scenarioStatus === "appears achievable") ? "On Track" : "Not fully shared",
         projectedCents,
         scenarioProjectedCents,
         shortfallCents:
@@ -288,6 +272,7 @@ export function workspaceView(
     ...workspace,
     commitments,
     ownConsent: consentFor(s, workspaceId, viewer),
+    recipientConsents: Object.fromEntries(workspace.members.filter(p=>p!==viewer).map(p=>[p,consentFor(s,workspaceId,viewer,p)])),
     history: s.history
       .filter((h) => h.workspaceId === workspaceId && h.profile === viewer)
       .slice(-20),

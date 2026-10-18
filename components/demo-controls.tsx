@@ -54,6 +54,8 @@ export function DemoControls() {
           <option value="kevin">Kevin</option>
           <option value="ava">Ava</option>
           <option value="maya">Maya</option>
+          <option value="noah">Noah</option>
+          <option value="lily">Lily</option>
         </select>
       </label>
       <label>

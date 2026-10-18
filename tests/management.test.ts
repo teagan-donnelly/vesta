@@ -279,12 +279,12 @@ test("record scopes separate bank customers, generic demos and fictional profile
     ),
   );
   assert.ok(
-    !JSON.stringify(workspaceView(state, "household", "ava")).includes(
+    !JSON.stringify(workspaceView(state, "vacation", "ava")).includes(
       "PRIVATE NESSIE NOTE",
     ),
   );
   assert.ok(
-    !JSON.stringify(workspaceView(state, "household", "ava")).includes(
+    !JSON.stringify(workspaceView(state, "vacation", "ava")).includes(
       "Manual grocery visit",
     ),
   );

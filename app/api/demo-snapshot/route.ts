@@ -4,7 +4,7 @@ import { GET as readRecords, POST as changeRecords } from "../records/route";
 import { GET as readPlanning } from "../personal-planning/route";
 import { GET as readFinancial } from "../financial-data/route";
 import { POST as explain } from "../explain/route";
-import { initialState, SNAPSHOT_DATE, type DemoState } from "@/lib/collaboration/model";
+import { initialState, profiles, SNAPSHOT_DATE, type DemoState } from "@/lib/collaboration/model";
 import { snapshotContext } from "@/lib/collaboration/store";
 import { snapshotRecords } from "@/lib/collaboration/snapshot-records";
 
@@ -26,10 +26,21 @@ function validState(raw: unknown): DemoState {
       !Array.isArray(s.commitments) || s.commitments.length > 500 ||
       !Array.isArray(s.history) || s.history.length > 100 || !s.consents || !s.plans)
     throw Error();
-  for (const p of ["ava", "kevin", "maya"] as const) {
+  const previousRevision = s.snapshotRevision || 1;
+  if (previousRevision < 3) {
+    // Versioned demo upgrade: preserve personal records, saved plans and custom workspaces;
+    // replace only the superseded shipped group fixtures. Reset remains explicit.
+    const fresh = initialState();
+    s.workspaces = [...fresh.workspaces, ...s.workspaces.filter(w=>!["household","cedar","vacation"].includes(w.id))];
+    s.commitments = [...fresh.commitments, ...s.commitments.filter(c=>!["household","cedar","vacation"].includes(c.workspaceId))];
+    s.consents = {...fresh.consents,...s.consents};
+    for (const p of profiles) s.plans[p.id] ||= fresh.plans[p.id];
+    s.snapshotRevision = 3;
+  }
+  for (const p of profiles.map(p=>p.id) as (keyof DemoState["plans"])[]) {
     const plan = s.plans[p];
     if (!plan || !plan.simulation || !Array.isArray(plan.preferences) || !Array.isArray(plan.messages) || plan.messages.length > 200) throw Error();
-    if ((s.snapshotRevision || 1) < 2) {
+    if (previousRevision < 2) {
       // Add only newly introduced baseline budgets to older browser snapshots.
       // Preserve existing records, deletions, simulations, messages and consent.
       const sets = (plan.recordSets ||= {}), scope = `demo:demo:${p}`;
@@ -38,7 +49,7 @@ function validState(raw: unknown): DemoState {
         if (!records.some(r => r.id === record.id)) records.push(record);
     }
   }
-  s.snapshotRevision = 2;
+  s.snapshotRevision = 3;
   return s;
 }
 export async function POST(request: Request) {
@@ -57,7 +68,7 @@ export async function POST(request: Request) {
     // Browser snapshot contents are fictional and editable, never authentication.
     // Provider resource IDs require a server proof, preventing a forged snapshot
     // from reading or deleting another browser/profile's Backboard assistant.
-    for (const p of ["ava", "kevin", "maya"] as const) {
+    for (const p of profiles.map(p=>p.id) as (keyof DemoState["plans"])[]) {
       const plan = state.plans[p];
       if (plan.assistantId) {
         const expected = proof(input.session, p, plan.assistantId);
@@ -74,7 +85,7 @@ export async function POST(request: Request) {
       ...(input.method === "POST" ? { body: JSON.stringify(input.body) } : {}),
     });
     const response = await snapshotContext.run(state, () => handler(inner));
-    for (const p of ["ava", "kevin", "maya"] as const) {
+    for (const p of profiles.map(p=>p.id) as (keyof DemoState["plans"])[]) {
       const plan = state.plans[p];
       if (plan.assistantId) plan.assistantProof = proof(input.session, p, plan.assistantId);
     }

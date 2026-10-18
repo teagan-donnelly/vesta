@@ -33,6 +33,7 @@ function Conversation({ profile }: { profile: string }) {
   const [language, setLanguage] = useAssistantLanguage();
   const [reply, setReply] = useState<Reply | null>(null);
   const [question, setQuestion] = useState("");
+  const [contextGroup] = useState(()=>typeof window!=="undefined" ? new URLSearchParams(window.location.search).get("workspace") : null);
   const [applied, setApplied] = useState(false);
   const bottom = useRef<HTMLDivElement>(null);
   const settings = useRef<HTMLDetailsElement>(null);
@@ -70,8 +71,10 @@ function Conversation({ profile }: { profile: string }) {
       {error && <Notice tone="risk">{error}</Notice>}
       {data.context.risk && <section className="assistant-context" aria-label="Your planning context">
         <span className="eyebrow">YOUR FINANCES, IN CONTEXT</span>
-        <h2>Your upcoming rent contribution may be at risk.</h2>
+        <h2>Your {data.context.risk.label} contribution may be at risk.</h2>
         <p>{formatCurrency(data.context.risk.availableCents || 0)} is estimated available for your {formatCurrency(data.context.risk.shareCents || 0)} share by {dateLabel(data.context.risk.date)}. Want to explore ways to cover the {formatCurrency(data.context.risk.shortfallCents)} difference?</p>
+        {data.context.obligations.map(c=><p key={c.id}>{c.name}: {formatCurrency(c.shareCents)} agreed by {dateLabel(c.dueDate)} · {formatCurrency(c.coveredCents || 0)} projected readiness. {c.id==="rent"?"This rent commitment is already deducted before vacation readiness.":""}</p>)}
+        {contextGroup==="vacation" && <Button disabled={busy} onClick={()=>ask("Help me resolve my vacation savings shortfall before October 27 while protecting my rent and keeping my gym membership non-negotiable.")}>Explore vacation solutions</Button>}
         {data.context.preferences.map(p => <p className="preference-chip" key={p}>Your demo preference: {p} Memory sharing is optional.</p>)}
       </section>}
       <Panel
@@ -112,8 +115,8 @@ function Conversation({ profile }: { profile: string }) {
               <strong>Vesta</strong>
               <p>
                 {spanish
-                  ? "Puedo ayudarte a revisar el alquiler, explorar cambios y decidir qué compartir. ¿Por dónde empezamos?"
-                  : data.context.risk ? "Let's protect your rent contribution while respecting what matters to you. I can compare changes before the deadline and show what your roommate would see." : "I can help you understand upcoming payments, explore changes, and decide what to share. What would you like to work on?"}
+                  ? "Puedo ayudarte a revisar tus compromisos, explorar cambios y decidir qué compartir. ¿Por dónde empezamos?"
+                  : data.context.risk ? "Let's protect your shared contribution while respecting what matters to you. I can compare changes before the deadline and show what each group is authorized to see." : "I can help you understand upcoming payments, explore changes, and decide what to share. What would you like to work on?"}
               </p>
             </article>
           )}

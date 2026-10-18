@@ -35,11 +35,12 @@ test("Kevin → Domino → Shared → Ava survives stateless round trips with di
     const refreshed = await call("/api/personal-planning?profile=kevin");
     assert.deepEqual(project(refreshed), baseline);
     assert.equal(project(refreshed, refreshed.planningSimulation).lowestBalanceCents, 13000);
+    await call("/api/collaboration?profile=kevin", {action:"consent",workspaceId:"vacation",recipient:"ava",consent:{readiness:false,coverage:false,balance:false,expenseIds:[]}});
     let ava = await call("/api/collaboration?profile=ava");
     let kevin = ava.workspaces[0].commitments[0].contributions.find((p: { profile: string }) => p.profile === "kevin");
     assert.equal(kevin.scenarioStatus, "not shared");
     assert.equal(kevin.coveredCents, undefined);
-    await call("/api/collaboration?profile=kevin", { action: "consent", workspaceId: "household", consent: { readiness: true, coverage: false, balance: false, expenseIds: [] } });
+    await call("/api/collaboration?profile=kevin", { action: "consent", workspaceId: "vacation", recipient:"ava", consent: { readiness: true, coverage: false, balance: false, expenseIds: [] } });
     ava = await call("/api/collaboration?profile=ava");
     kevin = ava.workspaces[0].commitments[0].contributions.find((p: { profile: string }) => p.profile === "kevin");
     assert.equal(kevin.status, "may be at risk");
@@ -49,8 +50,8 @@ test("Kevin → Domino → Shared → Ava survives stateless round trips with di
     assert.deepEqual(kevin.disclosedExpenses, []);
     assert.deepEqual(ava.own.simulation, {});
     assert.doesNotMatch(JSON.stringify(ava), /fictional-kevin|kevin-credit|kevin-Spotify/);
-    await call("/api/collaboration?profile=kevin", { action: "consent", workspaceId: "household", consent: { readiness: false, coverage: false, balance: false, expenseIds: [] } });
-    assert.equal((await call("/api/collaboration?profile=ava")).workspaces[0].commitments[0].contributions[1].scenarioStatus, "not shared");
+    await call("/api/collaboration?profile=kevin", { action: "consent", workspaceId: "vacation", recipient:"ava", consent: { readiness: false, coverage: false, balance: false, expenseIds: [] } });
+    assert.equal((await call("/api/collaboration?profile=ava")).workspaces[0].commitments[0].contributions[0].scenarioStatus, "not shared");
     for (const profile of ["ava", "kevin", "maya"]) {
       const data = await call(`/api/financial-data?mode=demo&customer=demo:${profile}`);
       assert.equal(data.asOf, SNAPSHOT_DATE);
@@ -96,7 +97,7 @@ test("older browser snapshots receive new budgets once without losing edits, del
     return (await r.json()).state as typeof state;
   }
   const migrated = await read(state);
-  assert.equal(migrated.snapshotRevision, 2);
+  assert.equal(migrated.snapshotRevision, 3);
   assert.deepEqual(migrated.plans.kevin.simulation, state.plans.kevin.simulation);
   assert.deepEqual(migrated.consents, state.consents);
   assert.deepEqual(migrated.plans.kevin.preferences, state.plans.kevin.preferences);

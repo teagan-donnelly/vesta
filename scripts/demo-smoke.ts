@@ -79,7 +79,8 @@ async function main() {
   await api("kevin");
   await api("kevin", {
     action: "consent",
-    workspaceId: "household",
+    workspaceId: "vacation",
+    recipient:"ava",
     consent: {
       readiness: true,
       coverage: false,
@@ -89,7 +90,7 @@ async function main() {
   });
   let ava = await api("ava");
   let shared = ava.workspaces[0].commitments[0];
-  assert.equal(shared.contributions[1].status, "may be at risk");
+  assert.equal(shared.contributions[0].status, "may be at risk");
   assert.equal(shared.projectedCents, null);
   assert.ok(!JSON.stringify(ava).includes("fictional-kevin"));
   await api("kevin", {
@@ -105,7 +106,7 @@ async function main() {
   assert.match(kevin.assistant.reply, /gym/);
   kevin = await api("kevin", {
     action: "chat",
-    question: "What could I change before rent while keeping my gym?",
+    question: "What could I change before my vacation deadline while keeping my gym?",
     language: "en",
   });
   assert.ok(kevin.assistant.proposal);
@@ -116,14 +117,15 @@ async function main() {
   });
   ava = await api("ava");
   shared = ava.workspaces[0].commitments[0];
-  assert.equal(shared.contributions[1].status, "may be at risk");
-  assert.equal(shared.contributions[1].scenarioStatus, "appears achievable");
-  assert.equal(shared.contributions[1].coveredCents, undefined);
+  assert.equal(shared.contributions[0].status, "may be at risk");
+  assert.equal(shared.contributions[0].scenarioStatus, "appears achievable");
+  assert.equal(shared.contributions[0].coveredCents, undefined);
   assert.deepEqual(ava.own.messages, []);
   assert.deepEqual(ava.own.preferences, []);
   await api("kevin", {
     action: "consent",
-    workspaceId: "household",
+    workspaceId: "vacation",
+    recipient:"ava",
     consent: {
       readiness: false,
       coverage: false,
@@ -133,7 +135,7 @@ async function main() {
   });
   ava = await api("ava");
   assert.equal(
-    ava.workspaces[0].commitments[0].contributions[1].scenarioStatus,
+    ava.workspaces[0].commitments[0].contributions[0].scenarioStatus,
     "not shared",
   );
   await api("kevin", { action: "memory", enabled: false, preferences: [] });

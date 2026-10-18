@@ -13,7 +13,7 @@ export function ScenarioOptions() {
       {choices.slice(0, 2).map(option => <article key={option.label}>
         <h3>{option.label}</h3>
         <p><strong>{formatCurrency(option.beforeCents)} → {formatCurrency(option.afterCents)}</strong> lowest balance</p>
-        <p className="subtext">{option.shortfallCents === 0 ? "Your rent contribution looks covered" : `${formatCurrency(option.shortfallCents)} still to cover`} by {option.dueDate}. Estimates only.</p>
+        <p className="subtext">{option.shortfallCents === 0 ? "Your contribution looks covered" : `${formatCurrency(option.shortfallCents)} still to cover`} by {option.dueDate}. Estimates only.</p>
         <Button variant="secondary" onClick={() => setSimulation(option.simulation)}>Preview this option</Button>
         <details><summary>Dates & details</summary><p>{option.description}</p></details>
       </article>)}

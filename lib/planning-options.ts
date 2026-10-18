@@ -38,7 +38,7 @@ export function planningOptions(data: FinancialData, current: Simulation = {}, p
     const sub = subscriptions.filter(s => !current.removedSubscriptions?.includes(s.id)).sort((a,b) => b.amountCents-a.amountCents)[0];
     if (sub) {
       const remaining = Math.max(0, Math.abs(optional.amountCents) - Math.max(0, before.shortfallCents - sub.amountCents + 1000));
-      choices.push({ label: `Review ${sub.merchant} + reduce the optional purchase`, description: `Remove the estimated ${sub.merchant} charge before rent and cap ${optional.merchant} at $${(remaining/100).toFixed(2)}. This is a plan, not a cancellation.`, simulation: { ...current, eventId: `pending:${optional.id}`, delayDays: 0, paymentCents: remaining, removedSubscriptions: [...new Set([...(current.removedSubscriptions || []), sub.id])] } });
+      choices.push({ label: `Review ${sub.merchant} + reduce the optional purchase`, description: `Remove the estimated ${sub.merchant} charge before the shared deadline and cap ${optional.merchant} at $${(remaining/100).toFixed(2)}. This is a plan, not a cancellation.`, simulation: { ...current, eventId: `pending:${optional.id}`, delayDays: 0, paymentCents: remaining, removedSubscriptions: [...new Set([...(current.removedSubscriptions || []), sub.id])] } });
     }
   }
   for (const sub of subscriptions) choices.push({ label: `Review ${sub.merchant}`, description: `Remove its estimated charge on ${sub.nextChargeDate} from this what-if plan only.`, simulation: { ...current, removedSubscriptions: [...new Set([...(current.removedSubscriptions || []), sub.id])] } });

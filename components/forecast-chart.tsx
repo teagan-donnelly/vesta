@@ -106,7 +106,7 @@ export function ForecastChart({
               />
             ))}
             <ReferenceLine y={0} stroke="#c8a3a9" strokeDasharray="4 4" />
-            {deadlineDate && <ReferenceLine x={deadlineDate} stroke="#ad784a" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `Rent deadline · ${dateLabel(deadlineDate)}`, position: "insideTopRight", fill: "#8a5731", fontSize: 12 }}/>}
+            {deadlineDate && <ReferenceLine x={deadlineDate} stroke="#ad784a" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `Shared deadline · ${dateLabel(deadlineDate)}`, position: "insideTopRight", fill: "#8a5731", fontSize: 12 }}/>}
             <Tooltip
               cursor={{ stroke: "#cfd5de", strokeDasharray: "3 3" }}
               content={({ active, payload, label }) => {

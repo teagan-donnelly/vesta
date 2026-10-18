@@ -5,7 +5,9 @@ import type { ProfileId } from "./model";
 const people = {
   kevin: { name: "Kevin", balance: 142000, salary: 360000, payday: 28, employer: "Northstar Design payroll", grocery: "Oak Street Grocer", cafe: "Corner Table", transit: "Metro Transit", shop: "Fieldwork Outfitters", housing: "Monthly rent", rent: 100000, subscriptions: [["Spotify", 1500, 21], ["Entertainment bundle", 6000, 20], ["Riverside Fitness", 4500, 22]] },
   ava: { name: "Ava", balance: 620000, salary: 480000, payday: 25, employer: "Harbor Studio payroll", grocery: "Green Basket", cafe: "Juniper Kitchen", transit: "CityRail", shop: "Paper & Pine", housing: "Monthly rent", rent: 100000, subscriptions: [["Cinema Club", 1800, 8], ["Design Cloud", 3200, 23], ["Morning Yoga", 3900, 12]] },
-  maya: { name: "Maya", balance: 545000, salary: 420000, payday: 1, employer: "Cedar Health payroll", grocery: "Fresh Fields", cafe: "Saffron Bowl", transit: "CycleShare", shop: "Home & Hearth", housing: "Cedar Lane rent", rent: 110000, subscriptions: [["Book Circle", 1900, 6], ["Language Lab", 2400, 24], ["Trail Pass", 2900, 15]] },
+  maya: { name: "Maya", balance: 545000, salary: 420000, payday: 1, employer: "Cedar Health payroll", grocery: "Fresh Fields", cafe: "Saffron Bowl", transit: "CycleShare", shop: "Home & Hearth", housing: "Monthly rent", rent: 110000, subscriptions: [["Book Circle", 1900, 6], ["Language Lab", 2400, 24], ["Trail Pass", 2900, 15]] },
+  noah: { name:"Noah",balance:590000,salary:380000,payday:28,employer:"Pine Labs payroll",grocery:"Market Square",cafe:"Daily Roast",transit:"Metro Transit",shop:"City Goods",housing:"Monthly rent",rent:60000,subscriptions:[["Music Plus",1200,21],["Film Night",1800,22]] },
+  lily: { name:"Lily",balance:550000,salary:400000,payday:25,employer:"Orchard Media payroll",grocery:"Local Harvest",cafe:"Tea House",transit:"CityRail",shop:"Studio Store",housing:"Monthly rent",rent:60000,subscriptions:[["Reading Room",1500,20],["Cloud Studio",2000,24]] },
 } as const;
 
 export function financialSnapshot(profile: ProfileId, asOf: string): FinancialData {
@@ -37,7 +39,7 @@ export function financialSnapshot(profile: ProfileId, asOf: string): FinancialDa
     const rent = monthDate(month, 27);
     if (rent >= start && rent <= asOf) add(`${profile}-housing-${month}`, rent, p.housing, -p.rent, "Housing");
     const utility = monthDate(month, 19);
-    if (utility >= start && utility <= asOf) add(`${profile}-utility-${month}`, utility, profile === "kevin" ? "Electric utility" : profile === "ava" ? "Harbor Energy" : "Cedar Utilities", -(profile === "kevin" ? 10000 : profile === "ava" ? 12500 : 9500), "Utilities");
+    if (utility >= start && utility <= asOf) add(`${profile}-utility-${month}`, utility, profile === "kevin" ? "Electric utility" : profile === "ava" ? "Harbor Energy" : "Cedar Utilities", -(profile === "ava" ? 12500 : 10000), "Utilities");
     for (const [merchant, amount, day] of p.subscriptions) {
       const date = monthDate(month, day);
       if (date >= start && date <= asOf) add(`${profile}-${merchant}-${-month}`, date, merchant, -amount, "Subscription", false, "Fictional completed recurring service charge");
@@ -58,11 +60,11 @@ export function financialSnapshot(profile: ProfileId, asOf: string): FinancialDa
   const data: FinancialData = {
     source: "demo", asOf,
     planningPreferences: profile === "kevin" ? ["My gym membership is non-negotiable."] : [],
-    customers: [{ id: profile, name: p.name, location: "Fictional", household: profile === "maya" ? "Cedar Lane" : "Maple Street", incomeCents: p.salary, monthlyBudgetCents: profile === "kevin" ? 260000 : 320000 }],
+    customers: [{ id: profile, name: p.name, location: "Fictional", household: profile === "ava" ? "Vacation partnership" : "Maple Street Roommates", incomeCents: p.salary, monthlyBudgetCents: profile === "kevin" ? 260000 : 320000 }],
     accounts: [{ id: accountId, customerId: profile, name: "Fictional checking", type: "Checking", balanceCents: p.balance, institution: "Fictional snapshot — not Nessie" }],
     transactions: transactions.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id)),
     bills: [
-      { id: "utility", accountId, name: utilityName, dueDate: shift(asOf, 2), amountCents: profile === "kevin" ? 10000 : profile === "ava" ? 12500 : 9500, category: "Utilities", essential: true },
+      { id: "utility", accountId, name: utilityName, dueDate: shift(asOf, 2), amountCents: profile === "ava" ? 12500 : 10000, category: "Utilities", essential: true },
       { id: "repair", accountId, name: profile === "kevin" ? "Bicycle repair invoice" : profile === "ava" ? "Annual renters premium" : "Dental follow-up", dueDate: shift(asOf, 6), amountCents: profile === "kevin" ? 7000 : profile === "ava" ? 18000 : 8500, category: profile === "ava" ? "Insurance" : profile === "maya" ? "Healthcare" : "Transport", essential: true },
     ], loans: [],
     warnings: ["Fictional snapshot at October 17, 2026, 12:00 UTC — not live banking or Nessie records. Completed activity is already reflected in closing balances. Scheduled income and inferred recurrence are estimates."],

@@ -24,3 +24,11 @@ export function historyView(data: FinancialData, days: number) {
     spendingCents: spending.reduce((sum,p) => sum+Number(p.total),0),
   };
 }
+export function expenseChartRows(view: ReturnType<typeof historyView>, logarithmic: boolean) {
+  return view.spending.map(row=>({...row,date:String(row.date),value:0,original:row,
+    ...Object.fromEntries(view.series.map(s=>[s.key,logarithmic?Math.log10(1+Number(row[s.key])/100):row[s.key]])),
+  }));
+}
+export function expenseAxisCents(value:number,logarithmic:boolean) {
+  return logarithmic ? Math.round((10**value-1)*100) : value;
+}

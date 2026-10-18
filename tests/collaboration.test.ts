@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import {
-  initialState,
+
   personalData,
   coverage,
   workspaceView,
@@ -13,7 +13,8 @@ import {
 import { project, shift, subscriptionsFor } from "../lib/analysis";
 import { GET as rawGET, POST as rawPOST } from "../app/api/collaboration/route";
 import { browserRoute, browserWithDemo as withDemo } from "./snapshot-harness";
-const GET = browserRoute(rawGET), POST = browserRoute(rawPOST);
+import {legacyHousehold as initialState} from "./legacy-household";
+const GET = browserRoute(rawGET,initialState), POST = browserRoute(rawPOST,initialState);
 import { GET as financialGET } from "../app/api/financial-data/route";
 
 process.env.VESTA_DEMO_DIR = join(

@@ -3,7 +3,7 @@ import type { PersonalRecord } from "../management";
 // Recorded balances already include historical activity. Goals and holdings are
 // separately tracked assets, not extra checking-account funds.
 export function snapshotRecords(profile: string, asOf: string): PersonalRecord[] {
-  const index = ["ava", "kevin", "maya"].indexOf(profile);
+  const index = Math.max(0, ["ava", "kevin", "maya"].indexOf(profile));
   const records: PersonalRecord[] = [
     { id: `${profile}-credit`, kind: "credit", label: "Fictional everyday card", category: "Revolving", balanceCents: [42000, 68000, 26500][index], limitCents: [500000, 300000, 400000][index], openedDate: "2023-04-01", paymentStatus: "On time", date: asOf },
     { id: `${profile}-emergency`, kind: "goal", label: "Emergency reserve", category: "Emergency", targetCents: 600000, balanceCents: [240000, 85000, 320000][index], date: "2027-06-01", notes: "Separately tracked fictional savings; excluded from checking balance." },

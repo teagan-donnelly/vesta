@@ -1,4 +1,4 @@
-import type { DemoState } from "./model";
+import type { DemoState, ProfileId } from "./model";
 import { recordScope, type PersonalRecord } from "../management";
 export function personalRecords(
   state: DemoState,
@@ -11,7 +11,7 @@ export function personalRecords(
   // by collaborative payloads or attached to a fictional member's finances.
   const owner =
     mode === "demo" && customer.startsWith("demo:")
-      ? (customer.slice(5) as "ava" | "kevin" | "maya")
+      ? (customer.slice(5) as ProfileId)
       : "kevin";
   const plan = state.plans[owner];
   const sets = (plan.recordSets ||= {});

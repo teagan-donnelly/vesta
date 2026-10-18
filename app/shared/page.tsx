@@ -2,6 +2,9 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { GroupHealthCards } from "@/components/group-health";
+import { RelationshipPrivacy } from "@/components/relationship-privacy";
+import { RelationshipDisclosures } from "@/components/relationship-disclosures";
 import { SharedExpenseSummary } from "@/components/shared-expense-summary";
 import { PlanningRecovery } from "@/components/planning-recovery";
 import { readinessLabel } from "@/lib/navigation";
@@ -69,6 +72,7 @@ function Shared({ profile }: { profile: string }) {
     <>
       <DemoDisclosure storage={data.storage} />
       {error && <Notice tone="risk">{error}</Notice>}
+      <GroupHealthCards data={data}/>
       <div className="shared-toolbar">
         <label className="field">
           <span>Your workspaces</span>
@@ -153,6 +157,7 @@ function Shared({ profile }: { profile: string }) {
               )}
             </details>
           </Panel>
+          <RelationshipDisclosures workspace={workspace} viewer={profile}/>
           <div className="section-gap section-stack">
             {workspace.commitments.length ? (
               workspace.commitments.map((c) => (
@@ -304,11 +309,11 @@ function Shared({ profile }: { profile: string }) {
                       {c.contributions
                         .filter(
                           (a) =>
-                            a.disclosedBalanceCents !== undefined ||
+                            a.disclosedBills !== undefined || a.disclosedProjection !== undefined || a.disclosedBalanceCents !== undefined ||
                             a.disclosedExpenses.length,
                         )
                         .map((a) => (
-                          <p className="subtext" key={a.profile}>
+                          <div className="subtext" key={a.profile}>
                             Explicitly disclosed by {a.name}:{" "}
                             {a.disclosedBalanceCents !== undefined && (
                               <>
@@ -317,13 +322,15 @@ function Shared({ profile }: { profile: string }) {
                                 ·{" "}
                               </>
                             )}
+                            {a.disclosedBills && <div><strong>Authorized upcoming bills</strong>{a.disclosedBills.map(b=><p key={b.id}>{b.name} · {b.dueDate} · <Amount cents={b.amountCents}/></p>)}</div>}
+                            {a.disclosedProjection && <div><strong>Authorized projected balances · saved hypothetical plan</strong><div className="authorized-projection">{a.disclosedProjection.map(p=><span key={p.date}>{p.date}: <Amount cents={p.balanceCents}/></span>)}</div></div>}
                             {a.disclosedExpenses.map((t) => (
                               <span key={t.id}>
                                 {t.date} {t.merchant}{" "}
                                 <Amount cents={t.amountCents} /> ·{" "}
                               </span>
                             ))}
-                          </p>
+                          </div>
                         ))}
                       {c.contributions.some((a) => a.profile === profile) && (
                         <form
@@ -414,19 +421,20 @@ function Shared({ profile }: { profile: string }) {
           )}
           <details className="secondary-details section-gap" id="sharing">
             <summary>Privacy & sharing · choose what others can see</summary>
-            <Privacy
-              key={`${workspace.id}:${JSON.stringify(workspace.ownConsent)}`}
-              consent={workspace.ownConsent}
+            <RelationshipPrivacy key={workspace.id} workspace={workspace} profile={profile}>{(recipient,consent)=><Privacy
+              key={`${workspace.id}:${recipient}:${JSON.stringify(consent)}`}
+              consent={consent}
               expenses={data.expenses}
               busy={busy}
               save={(consent) =>
                 change({
                   action: "consent",
                   workspaceId: workspace.id,
+                  recipient,
                   consent,
                 })
               }
-            />
+            />}</RelationshipPrivacy>
           </details>
           {workspace.history.length > 0 && (
             <details className="secondary-details section-gap">
@@ -670,12 +678,14 @@ function Privacy({
             ["readiness", "Share whether I can cover my part"],
             ["coverage", "Share the estimated amount available for my share"],
             ["balance", "Share my account balance"],
+            ["bills", "Share my upcoming bills"],
+            ["projection", "Share my projected balances"],
           ] as const
         ).map(([k, label]) => (
           <label className="check-row" key={k}>
             <input
               type="checkbox"
-              checked={value[k]}
+              checked={Boolean(value[k])}
               onChange={(e) => setValue({ ...value, [k]: e.target.checked })}
             />
             {label}
@@ -715,6 +725,8 @@ function Privacy({
                 readiness: false,
                 coverage: false,
                 balance: false,
+                bills: false,
+                projection: false,
                 expenseIds: [],
               };
               if (await save(cleared)) setValue(cleared);

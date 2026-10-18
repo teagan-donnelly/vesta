@@ -1,0 +1,35 @@
+.group-health { margin: 22px 0; }
+.group-health-heading { display:flex; align-items:baseline; gap:20px; margin-bottom:12px; }
+.group-health-heading h2 { font: 28px Georgia,serif; margin:0; }
+.group-health-heading p { font-size:13px; color:#78685e; }
+.group-health-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.group-health-card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; border-top:3px solid #64806a; min-width:0; }
+.group-health-card.at-risk { border-top-color:#800f1a; background:#fff8f4; }
+.group-health-title { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.group-health-title h3 { font:23px Georgia,serif; margin:0; }
+.group-health-card > p { font-size:13px; color:#78685e; line-height:1.6; }
+.group-commitment { border-top:1px solid var(--line); padding:14px 0 8px; }
+.group-commitment > strong { font-size:14px; }
+.group-commitment > div { display:flex; gap:22px; justify-content:space-between; padding:10px 0; font-size:12px; }
+.group-commitment .amount { display:block; font-size:21px; font-weight:650; margin-top:4px; }
+.group-commitment progress { width:100%; height:7px; accent-color:#800f1a; }
+.group-health-card .inline-actions { flex-wrap:wrap; justify-content:space-between; margin-top:16px; }
+.group-health-card .inline-actions .button-primary { color:#fff; }
+.group-commitment progress::-webkit-progress-bar { background:#e6ded5; border-radius:8px; }
+.group-commitment progress::-webkit-progress-value { background:#637963; border-radius:8px; }
+.group-health-card.at-risk progress::-webkit-progress-value { background:#800f1a; }
+.group-commitment progress::-moz-progress-bar { background:#637963; }
+.group-health-card.at-risk progress::-moz-progress-bar { background:#800f1a; }
+.authorized-projection { display:flex; gap:12px; overflow:auto; max-width:100%; padding:10px 0; }
+.authorized-projection > span { flex:0 0 125px; padding:8px; background:#f7eee7; }
+.log-scale-control { display:flex; gap:8px; align-items:center; padding:12px 0; font-size:14px; font-weight:600; flex-wrap:wrap; }
+.log-scale-control span { font-size:12px; font-weight:400; color:#78685e; }
+.relationship-disclosures { border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:20px 22px; margin-top:18px; }
+.relationship-disclosures h2 { font-size:18px; margin:0; }.relationship-disclosures > p { font-size:13px; line-height:1.6; color:#78685e; }
+.relationship-disclosures > div { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px; }
+.relationship-disclosures article { border-top:1px solid var(--line); min-width:0; }.relationship-disclosures h3 { font-size:16px; }
+.relationship-disclosures dl { display:flex; flex-wrap:wrap; gap:24px; }.relationship-disclosures dt { font-size:12px; }.relationship-disclosures dd { margin:6px 0 0; font-size:21px; font-weight:600; }
+.relationship-disclosures details,.relationship-disclosures article p { font-size:13px; margin:12px 0; }.relationship-disclosures small { font-size:12px; line-height:1.6; color:#78685e; }
+html[data-theme="dark"] .group-health-card.at-risk { background:#35292a; }
+html[data-theme="dark"] .authorized-projection > span { background:#35292a; }
+@media(max-width:900px) { .group-health-grid { grid-template-columns:1fr; }.group-health-heading { display:block; }.group-health-title { flex-wrap:wrap; } }

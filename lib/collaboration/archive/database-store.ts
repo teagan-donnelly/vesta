@@ -3,7 +3,8 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Pool, type PoolClient } from "pg";
-import { initialState, type DemoState } from "../model";
+import type { DemoState } from "../model";
+import {legacyHousehold as initialState} from "./legacy-fixture";
 import { databaseConfig } from "../database-config";
 
 const globalStore = globalThis as typeof globalThis & {

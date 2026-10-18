@@ -15,9 +15,10 @@ async function main() {
   const errors: string[] = [];
   page.on("pageerror", e => errors.push(e.message));
   try {
-    for (const [name, path, ready] of [["home", "/", ".welcome-banner"], ["shared", "/shared", ".shared-key-figures"], ["assistant", "/assistant", ".assistant-context"], ["domino", "/domino", ".mini-metrics"]]) {
+    for (const [name, path, ready] of [["home", "/", ".welcome-banner"], ["shared", "/shared?workspace=vacation", ".shared-key-figures"], ["assistant", "/assistant", ".assistant-context"], ["domino", "/domino", ".mini-metrics"]]) {
       await page.goto(base + path);
       await expect(page.locator(ready)).toBeVisible();
+      if (phase !== "before" && name === "home") await expect(page.getByRole("region",{name:"Group Health"})).toBeVisible();
       if (phase !== "before" && name === "domino") {
         await page.getByRole("button", { name: "Preview this option", exact: true }).first().click();
         await expect(page.getByRole("region", { name: "Scenario outcome comparison" })).toContainText("$130.00");

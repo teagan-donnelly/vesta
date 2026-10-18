@@ -198,7 +198,7 @@ export function validateRecord(input: unknown): PersonalRecord {
 export function recordScope(mode: string, customer: string) {
   if (!["demo", "nessie"].includes(mode) || customer.length > 200)
     throw Error("Invalid financial profile.");
-  if (mode === "demo" && customer && !/^demo:(ava|kevin|maya)$/.test(customer))
+  if (mode === "demo" && customer && !/^demo:(ava|kevin|maya|noah|lily)$/.test(customer))
     throw Error("Choose a fictional profile.");
   if (mode === "nessie" && (!customer || customer.startsWith("demo:")))
     throw Error("Choose a Nessie customer first.");

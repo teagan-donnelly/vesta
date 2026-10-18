@@ -113,7 +113,7 @@ test("Gemini output cannot inject invented financial statements or perform actio
     assert.match(r.reply, /-\$200.00/);
     assert.ok(!r.reply.includes("9,999,999"));
     assert.deepEqual(s.plans.kevin.simulation, {});
-    assert.deepEqual(s.consents, {});
+    assert.deepEqual(s.consents, initialState().consents);
   } finally {
     globalThis.fetch = original;
     if (key) process.env.GEMINI_API_KEY = key;

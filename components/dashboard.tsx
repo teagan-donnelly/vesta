@@ -28,6 +28,7 @@ import {
   financialTotals,
   spendingCategories,
 } from "@/lib/management";
+import { HomeGroupHealth } from "./group-health";
 import { HomeHistoryChart } from "./home-history-chart";
 import { historyView } from "@/lib/history-view";
 export function Dashboard() {
@@ -103,6 +104,7 @@ export function Dashboard() {
           </section>
         ))}
       </div>
+      <HomeGroupHealth />
       <FinancialRisk />
       <div className="overview-main">
         <Panel
