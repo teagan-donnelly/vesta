@@ -97,7 +97,7 @@ test("older browser snapshots receive new budgets once without losing edits, del
     return (await r.json()).state as typeof state;
   }
   const migrated = await read(state);
-  assert.equal(migrated.snapshotRevision, 3);
+  assert.equal(migrated.snapshotRevision, 4);
   assert.deepEqual(migrated.plans.kevin.simulation, state.plans.kevin.simulation);
   assert.deepEqual(migrated.consents, state.consents);
   assert.deepEqual(migrated.plans.kevin.preferences, state.plans.kevin.preferences);

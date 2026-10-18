@@ -179,6 +179,7 @@ export async function POST(request: Request) {
               reportedCents:
                 old?.contributions.find((p) => p.profile === a.profile)
                   ?.reportedCents || 0,
+              hasReported: old?.contributions.find(p=>p.profile===a.profile)?.hasReported,
               agreed:
                 old?.contributions.some(
                   (p) =>
@@ -247,6 +248,7 @@ export async function POST(request: Request) {
           if (amount > a.expectedCents)
             throw new Error("Report cannot exceed your assignment.");
           a.reportedCents = amount;
+          a.hasReported = true;
         } else if (action === "consent") {
           const w = membership(s, text(body.workspaceId), viewer);
           const expenses = personalData(s, viewer).transactions.map(

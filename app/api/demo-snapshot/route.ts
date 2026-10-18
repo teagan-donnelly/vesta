@@ -4,7 +4,7 @@ import { GET as readRecords, POST as changeRecords } from "../records/route";
 import { GET as readPlanning } from "../personal-planning/route";
 import { GET as readFinancial } from "../financial-data/route";
 import { POST as explain } from "../explain/route";
-import { initialState, profiles, SNAPSHOT_DATE, type DemoState } from "@/lib/collaboration/model";
+import { consentDefault, initialState, profiles, SNAPSHOT_DATE, type DemoState } from "@/lib/collaboration/model";
 import { snapshotContext } from "@/lib/collaboration/store";
 import { snapshotRecords } from "@/lib/collaboration/snapshot-records";
 
@@ -49,7 +49,19 @@ function validState(raw: unknown): DemoState {
         if (!records.some(r => r.id === record.id)) records.push(record);
     }
   }
-  s.snapshotRevision = 3;
+  if (previousRevision < 4) {
+    // Update only the shipped Noah reporting fixture. Keep personal records,
+    // scenarios and recipient overrides, including explicit revocations.
+    for (const c of s.commitments.filter(c=>c.workspaceId === "household" && ["rent","utilities"].includes(c.id))) {
+      const noah = c.contributions.find(a=>a.profile === "noah");
+      if (noah && noah.hasReported === undefined) {
+        noah.reportedCents = 0;
+        noah.hasReported = false;
+      }
+    }
+    s.consents["household:noah"] = {...(s.consents["household:noah"] || consentDefault()), readiness:true, coverage:true};
+  }
+  s.snapshotRevision = 4;
   return s;
 }
 export async function POST(request: Request) {

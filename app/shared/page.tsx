@@ -275,7 +275,7 @@ function Shared({ profile }: { profile: string }) {
                                 )}
                               </td>
                               <td>
-                                <Amount cents={a.reportedCents} />
+                                {a.reportedCents === null ? "Not reported" : <Amount cents={a.reportedCents} />}
                               </td>
                               <td>
                                 {readinessLabel(a.status, a.name)}

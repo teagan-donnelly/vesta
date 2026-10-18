@@ -38,6 +38,7 @@ export type Commitment = {
     profile: ProfileId;
     expectedCents: number;
     reportedCents: number;
+    hasReported?: boolean;
     agreed: boolean;
   }[];
 };
@@ -92,7 +93,7 @@ export const SNAPSHOT_AT = "2026-10-17T12:00:00.000Z";
 export const SNAPSHOT_DATE = SNAPSHOT_AT.slice(0, 10);
 export function initialState(asOf = SNAPSHOT_DATE): DemoState {
   return {
-    snapshotRevision: 3,
+    snapshotRevision: 4,
     asOf,
     workspaces: [
       { id: "household", name: "Maple Street Roommates", kind: "Household", owner: "kevin", members: ["kevin", "maya", "noah", "lily"] },
@@ -100,15 +101,16 @@ export function initialState(asOf = SNAPSHOT_DATE): DemoState {
     ],
     commitments: [
       { id: "rent", workspaceId: "household", owner: "kevin", name: "Monthly rent", amountCents: 240000, dueDate: shift(asOf,8), recurring: true,
-        contributions: (["kevin", "maya", "noah", "lily"] as ProfileId[]).map(profile=>({profile, expectedCents:60000, reportedCents:60000, agreed:true})) },
+        contributions: (["kevin", "maya", "noah", "lily"] as ProfileId[]).map(profile=>({profile, expectedCents:60000, reportedCents:profile === "noah" ? 0 : 60000, hasReported:profile !== "noah", agreed:true})) },
       { id: "utilities", workspaceId: "household", owner: "kevin", name: "Shared electric utility", amountCents:40000, dueDate:shift(asOf,2), recurring:true,
-        contributions: (["kevin", "maya", "noah", "lily"] as ProfileId[]).map(profile=>({profile, expectedCents:10000, reportedCents:10000, agreed:true})) },
+        contributions: (["kevin", "maya", "noah", "lily"] as ProfileId[]).map(profile=>({profile, expectedCents:10000, reportedCents:profile === "noah" ? 0 : 10000, hasReported:profile !== "noah", agreed:true})) },
       { id: "vacation", workspaceId:"vacation", owner:"kevin", name:"Vacation savings", amountCents:80000, dueDate:shift(asOf,10), recurring:false,
         contributions: (["kevin", "ava"] as ProfileId[]).map(profile=>({profile, expectedCents:40000, reportedCents:0, agreed:true})) },
     ],
     consents: {
       ...Object.fromEntries((["kevin", "maya", "noah", "lily"] as ProfileId[]).map(p=>[`household:${p}`,{...consentDefault(),readiness:true}])),
       "household:maya:kevin": {...consentDefault(),readiness:true,balance:true},
+      "household:noah": {...consentDefault(),readiness:true,coverage:true},
       "vacation:kevin:ava": {...consentDefault(),readiness:true,coverage:true,balance:true,bills:true,projection:true},
       "vacation:ava:kevin": {...consentDefault(),readiness:true,coverage:true,balance:true,bills:true,projection:true},
     },
@@ -212,7 +214,7 @@ export function workspaceView(
           profile: a.profile,
           name: profiles.find((p) => p.id === a.profile)!.name,
           expectedCents: a.expectedCents,
-          reportedCents: a.reportedCents,
+          reportedCents: a.hasReported === false ? null : a.reportedCents,
           agreed: a.agreed,
           status:
             own || consent.readiness
@@ -265,7 +267,7 @@ export function workspaceView(
           projectedCents === null
             ? null
             : Math.max(0, c.amountCents - projectedCents),
-        reportedCents: contributions.reduce((n, a) => n + a.reportedCents, 0),
+        reportedCents: contributions.reduce((n, a) => n + (a.reportedCents ?? 0), 0),
       };
     });
   return {

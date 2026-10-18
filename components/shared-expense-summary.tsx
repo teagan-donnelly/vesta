@@ -38,7 +38,7 @@ export function SharedExpenseSummary({ expense, viewer, workspace }: { expense: 
         {own && <div className={shortfall ? "shared-risk-callout" : "shared-ready-callout"}>
           <strong>{shortfall ? `${formatCurrency(shortfall)} still to cover before ${dateLabel(expense.dueDate)}` : readinessLabel(own.scenarioStatus,"You")}</strong>
           <p>{shortfall ? "Your original outlook falls short of your agreed responsibility. Explore a change without sharing your private finances." : "Your personal outlook stays separate from other members’ finances."}</p>
-          {changed && <p>With your changes: <strong>{readinessLabel(own.scenarioStatus).toLowerCase()}</strong>. Original estimate: {own.coveredCents!=null?formatCurrency(own.coveredCents):"Not shared"}. This is hypothetical; bank records are unchanged.</p>}
+          {changed && <p>With your changes: <strong>{readinessLabel(own.scenarioStatus).toLowerCase()}</strong>. Predicted estimate: {own.coveredCents!=null?formatCurrency(own.coveredCents):"Not shared"}. This is hypothetical; bank records are unchanged.</p>}
           <div className="shared-next-action"><Link className="button button-primary" href={`/plan?${query}`}>Explore solutions</Link><Link className="text-link" href={`/assistant?workspace=${workspace}&commitment=${expense.id}`}>Ask Vesta for help →</Link></div>
         </div>}
       </div>
@@ -46,12 +46,12 @@ export function SharedExpenseSummary({ expense, viewer, workspace }: { expense: 
     <div className="contribution-board" aria-label="Contribution planning breakdown">
       <div className="contribution-legend"><span><i className="track-agreed"/>Agreed share</span><span><i className="track-reported"/>Member-reported</span><span><i className="track-projected"/>Projected readiness</span><span><i className="track-private"/>Unknown / undisclosed</span></div>
       {expense.contributions.map(a => {
-        const reported = a.expectedCents ? Math.min(100,a.reportedCents/a.expectedCents*100) : 0;
+        const reported = a.expectedCents ? Math.min(100,(a.reportedCents ?? 0)/a.expectedCents*100) : 0;
         const covered = a.coveredCents != null && a.expectedCents ? Math.min(100,a.coveredCents/a.expectedCents*100) : null;
         return <div className="contribution-member" key={a.profile}>
           <div className="member-name"><span className="member-avatar" style={{background:memberColors[a.profile],color:"#fff"}} aria-hidden="true">{a.name[0]}</span><div><strong>{a.name}{a.profile===viewer ? " · You" : ""}</strong><small>{a.agreed ? "Agreed" : "Proposed"} {formatCurrency(a.expectedCents)}</small></div></div>
-          <div><span>Member-reported <strong>{formatCurrency(a.reportedCents)}</strong></span><div className="contribution-track track-agreed"><i className="track-reported" style={{width:`${reported}%`}}/></div><small>Self-reported, not a verified payment</small></div>
-          <div><span>Original estimate <strong>{a.coveredCents != null ? formatCurrency(a.coveredCents) : "Not shared"}</strong></span><div className={`contribution-track ${covered===null ? "track-private" : "track-agreed"}`}><i className="track-projected" style={{width:`${covered || 0}%`}}/></div><small>{readinessLabel(a.status,a.name)}{a.scenarioStatus!==a.status ? ` · What-if: ${readinessLabel(a.scenarioStatus).toLowerCase()}` : ""}</small></div>
+          <div><span>Member-reported <strong>{a.reportedCents === null ? "Not reported" : formatCurrency(a.reportedCents)}</strong></span><div className="contribution-track track-agreed"><i className="track-reported" style={{width:`${reported}%`}}/></div><small>{a.reportedCents === null ? "No amount reported; prediction is separate" : "Self-reported, not a verified payment"}</small></div>
+          <div><span>Predicted estimate <strong>{a.coveredCents != null ? formatCurrency(a.coveredCents) : "Not shared"}</strong></span><div className={`contribution-track ${covered===null ? "track-private" : "track-agreed"}`}><i className="track-projected" style={{width:`${covered || 0}%`}}/></div><small>{readinessLabel(a.status,a.name)}{a.scenarioStatus!==a.status ? ` · What-if: ${readinessLabel(a.scenarioStatus).toLowerCase()}` : ""}</small></div>
         </div>;
       })}
     </div>
