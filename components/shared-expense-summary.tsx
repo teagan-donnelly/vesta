@@ -5,8 +5,8 @@ import { dateLabel } from "./activity-table";
 import { readinessLabel } from "@/lib/navigation";
 import { formatCurrency } from "@/lib/analysis";
 import type { PlanningPayload } from "./demo-planning";
+import { memberColors } from "@/lib/member-colors";
 type Expense = PlanningPayload["workspaces"][number]["commitments"][number];
-const palette = ["#800f1a", "#ce8c91", "#c9aa79"];
 export function SharedExpenseSummary({ expense, viewer, workspace }: { expense: Expense; viewer: string; workspace: string }) {
   const own = expense.contributions.find(a => a.profile === viewer);
   const currentCovered = own?.scenarioCoveredCents ?? own?.coveredCents;
@@ -16,7 +16,7 @@ export function SharedExpenseSummary({ expense, viewer, workspace }: { expense: 
   const slices = expense.contributions.map((a,i) => {
     const start = expense.amountCents ? expense.contributions.slice(0,i).reduce((sum,p)=>sum+p.expectedCents,0)/expense.amountCents*100 : 0;
     const end = start+(expense.amountCents ? a.expectedCents/expense.amountCents*100 : 0);
-    return `${palette[i%palette.length]} ${start}% ${end}%`;
+    return `${memberColors[a.profile]} ${start}% ${end}%`;
   });
   return <div className="shared-expense-summary intelligence-summary">
     <div className="shared-obligation-top">
@@ -27,7 +27,7 @@ export function SharedExpenseSummary({ expense, viewer, workspace }: { expense: 
       <div className="agreed-allocation">
         <div className="agreed-ring" style={{ background: `conic-gradient(${slices.join(",")})` }} role="img" aria-label={`Agreed shares of the ${formatCurrency(expense.amountCents)} obligation; not money collected`}><div><strong><Amount cents={expense.amountCents}/></strong><span>Total obligation</span></div></div>
         <p>Agreed allocation, not collected funds</p>
-        <div className="allocation-key">{expense.contributions.map((a,i)=><span key={a.profile}><i style={{background:palette[i%palette.length]}}/>{a.name} · {formatCurrency(a.expectedCents)}</span>)}</div>
+        <div className="allocation-key">{expense.contributions.map(a=><span key={a.profile}><i style={{background:memberColors[a.profile]}}/>{a.name} · {formatCurrency(a.expectedCents)}</span>)}</div>
       </div>
       <div className="shared-personal-intelligence">
         <div className="shared-key-figures">
@@ -49,7 +49,7 @@ export function SharedExpenseSummary({ expense, viewer, workspace }: { expense: 
         const reported = a.expectedCents ? Math.min(100,a.reportedCents/a.expectedCents*100) : 0;
         const covered = a.coveredCents != null && a.expectedCents ? Math.min(100,a.coveredCents/a.expectedCents*100) : null;
         return <div className="contribution-member" key={a.profile}>
-          <div className="member-name"><span className="member-avatar">{a.name[0]}</span><div><strong>{a.name}{a.profile===viewer ? " · You" : ""}</strong><small>{a.agreed ? "Agreed" : "Proposed"} {formatCurrency(a.expectedCents)}</small></div></div>
+          <div className="member-name"><span className="member-avatar" style={{background:memberColors[a.profile],color:"#fff"}} aria-hidden="true">{a.name[0]}</span><div><strong>{a.name}{a.profile===viewer ? " · You" : ""}</strong><small>{a.agreed ? "Agreed" : "Proposed"} {formatCurrency(a.expectedCents)}</small></div></div>
           <div><span>Member-reported <strong>{formatCurrency(a.reportedCents)}</strong></span><div className="contribution-track track-agreed"><i className="track-reported" style={{width:`${reported}%`}}/></div><small>Self-reported, not a verified payment</small></div>
           <div><span>Original estimate <strong>{a.coveredCents != null ? formatCurrency(a.coveredCents) : "Not shared"}</strong></span><div className={`contribution-track ${covered===null ? "track-private" : "track-agreed"}`}><i className="track-projected" style={{width:`${covered || 0}%`}}/></div><small>{readinessLabel(a.status,a.name)}{a.scenarioStatus!==a.status ? ` · What-if: ${readinessLabel(a.scenarioStatus).toLowerCase()}` : ""}</small></div>
         </div>;
