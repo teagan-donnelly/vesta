@@ -99,3 +99,19 @@ existing localhost preview and explicit user confirmation.
 Tiger verification currently fails at TLS with `SELF_SIGNED_CERT_IN_CHAIN`.
 Database persistence and live schema compatibility are not claimed verified.
 See [the connection repair notes](planning-outage-repair.md) for trusted-CA setup.
+
+## Deployment verification
+
+The release is live on https://vesta-seven-phi.vercel.app. The deployed Kevin →
+Backboard proposal → confirmed scenario → Ava readiness → consent revocation
+smoke test passed. The full browser suite passed on the built localhost server,
+including all management forms and responsive checks with no page errors.
+
+The stricter production browser test exposed the hosted local adapter's documented
+retention limit: a newly created goal did not survive a full page reload into
+Emergency Planning. This is not a successful production persistence verification.
+The UI and record editor therefore warn explicitly that temporary online demo
+records can reset on refresh. Use localhost for reliable local demonstrations,
+or repair Tiger TLS, verify its schema, and select **Use configured database**
+in Settings before relying on deployed record retention. No automatic fallback
+or unverified database-success claim was introduced.

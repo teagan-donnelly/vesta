@@ -323,10 +323,28 @@ export function FinancialLoading() {
   );
 }
 export function DataStatus() {
-  const { data, error, loading, reload, mode, customer, setCustomer } =
-    useFinancial();
+  const {
+    data,
+    error,
+    loading,
+    reload,
+    mode,
+    customer,
+    setCustomer,
+    recordsStorage,
+  } = useFinancial();
   return (
     <>
+      {/Ephemeral/i.test(recordsStorage) && (
+        <Notice tone="caution">
+          <p>
+            Temporary online demo: tracked records can reset after a refresh.
+            For records you need to keep, use a working planning database or the
+            localhost app. <Link href="/settings">Review planning storage</Link>
+            .
+          </p>
+        </Notice>
+      )}
       {loading && data && (
         <p role="status" className="refresh-status">
           Updating financial information...

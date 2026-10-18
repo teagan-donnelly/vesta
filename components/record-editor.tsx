@@ -364,6 +364,15 @@ function RecordEditor({
             />
           </label>
         </div>
+        {/Ephemeral/i.test(recordsStorage) && (
+          <Notice tone="caution">
+            <p>
+              Temporary online demo: this record may reset after a refresh. Use
+              a working planning database or localhost for records you need to
+              keep.
+            </p>
+          </Notice>
+        )}
         {(error || recordsError) && (
           <Notice tone="caution">
             <p role="alert">{error || recordsError}</p>
