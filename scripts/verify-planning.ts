@@ -1,6 +1,10 @@
 import { loadEnvConfig } from "@next/env";
 import { backboard } from "../lib/collaboration/backboard";
-import { pool } from "../lib/collaboration/store";
+import { pool, storageSource, withDemo } from "../lib/collaboration/store";
+import { randomUUID } from "node:crypto";
+import { databaseDiagnostic } from "../lib/collaboration/database-diagnostics";
+import { verifyDatabaseTls } from "../lib/collaboration/database-health";
+import type { Pool, PoolClient } from "pg";
 loadEnvConfig(process.cwd());
 async function main() {
   if (!process.env.BACKBOARD_API_KEY)
@@ -15,14 +19,26 @@ async function main() {
       console.log("Backboard: connection failed. No credential values logged.");
       process.exitCode = 1;
     }
-  if (!process.env.TIGER_DATABASE_URL)
-    console.log("Tiger Data: not configured; using fictional local adapter.");
+  if (!process.env.TIGER_DATABASE_URL) {
+    console.log("Tiger Data: NOT verified; TIGER_DATABASE_URL is missing. Local planning is not a database verification.");
+    process.exitCode = 1;
+  }
   else
+  {
+    let database: Pool | undefined;
+    let client: PoolClient | undefined;
+    let stage = "configuration";
     try {
-      const result = await pool().query(
+      database = pool();
+      stage = "connection/TLS";
+      client = await database.connect();
+      await verifyDatabaseTls(client);
+      console.log("Tiger Data: connection, encrypted TLS and certificate/hostname verification succeeded.");
+      stage = "Timescale extension";
+      const result = await client.query(
         "SELECT extversion FROM pg_extension WHERE extname='timescaledb'",
       );
-      if (!result.rowCount) throw Error();
+      if (!result.rowCount) throw Object.assign(new Error(), { code: "0A000" });
       // Read-only checks cover every migrated relation, including the Timescale
       // history view. Never run migrations or mutate existing records here.
       for (const relation of [
@@ -30,23 +46,26 @@ async function main() {
         "vesta_memberships", "vesta_commitments", "vesta_contributions",
         "vesta_consents", "vesta_private_plans", "vesta_readiness_snapshots",
         "vesta_daily_readiness",
-      ]) await pool().query(`SELECT * FROM ${relation} LIMIT 0`);
+      ]) {
+        stage = `schema: ${relation}`;
+        await client.query(`SELECT * FROM ${relation} LIMIT 0`);
+      }
+      stage = "Timescale hypertable";
+      const hypertable = await client.query("SELECT hypertable_name FROM timescaledb_information.hypertables WHERE hypertable_schema=current_schema() AND hypertable_name='vesta_readiness_snapshots'");
+      if (!hypertable.rowCount) throw Object.assign(new Error(), { code: "HYPERTABLE_MISSING" });
+      stage = "Vesta planning adapter";
+      const adapter = await withDemo(randomUUID(), () => storageSource(), false, false);
+      if (adapter !== "Tiger Data PostgreSQL") throw Object.assign(new Error(), { code: "WRONG_ADAPTER" });
       console.log(
-        "Tiger Data: database read, Timescale extension, and planning schema verified.",
+        "Tiger Data: actual PostgreSQL reads, all planning relations, Timescale hypertable and Vesta planning adapter verified. No local fallback used; no records changed.",
       );
     } catch (error) {
-      const code = (error as { code?: string }).code;
-      console.log(
-        code === "SELF_SIGNED_CERT_IN_CHAIN" ||
-          code === "UNABLE_TO_VERIFY_LEAF_SIGNATURE"
-          ? "Tiger Data: certificate chain is not trusted. Supply the provider CA in TIGER_DATABASE_CA; verification remains enabled."
-          : code === "42P01" || code === "42703"
-            ? "Tiger Data: planning schema is missing or incomplete. Review migrations/001_collaborative_planning.sql before running db:migrate. No records changed."
-            : "Tiger Data: verification failed. Check connectivity and server configuration. No URL logged and no records changed.",
-      );
+      console.error("Tiger Data verification failed:", JSON.stringify({ stage, ...databaseDiagnostic(error) }));
       process.exitCode = 1;
     } finally {
-      await pool().end();
+      client?.release();
+      if (database) await database.end().catch(() => {});
     }
+  }
 }
 void main();

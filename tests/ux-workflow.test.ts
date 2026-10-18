@@ -109,7 +109,9 @@ test("storage selection requires confirmation and origin checks, never silently 
 test("custom database CA preserves hostname/certificate verification and no-CA settings are not downgraded", () => {
   const uri =
     "postgresql://fictional:password@database.invalid/db?sslmode=require";
-  assert.deepEqual(databaseConfig(uri), { connectionString: uri });
+  const secure = databaseConfig(uri);
+  assert.equal(new URL(secure.connectionString!).searchParams.get("sslmode"), "verify-full");
+  assert.deepEqual(secure.ssl, { rejectUnauthorized: true });
   const config = databaseConfig(
     uri,
     "-----BEGIN CERTIFICATE-----\\nfictional\\n-----END CERTIFICATE-----",

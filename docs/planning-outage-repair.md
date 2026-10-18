@@ -31,6 +31,28 @@ left Nessie mode, but both dependencies then blocked the demo profile's Home.
 
 ## Tiger configuration and verification
 
+For a newly created paid service, Tiger documents an initial self-signed
+certificate while a signed certificate is provisioned, usually within 30 minutes:
+[Tiger strict SSL guide](https://d1ovb29l12vjqm.cloudfront.net/use-timescale/latest/security/strict-ssl/).
+Wait until at least 30 minutes after creation before treating the initial trust
+failure as a permanent CA problem. Do not trust an unverified certificate fetched
+from the failed connection. If strict verification still fails, obtain the trusted
+chain through the provider/administrator, or ask Tiger support to investigate
+certificate issuance for that service.
+
+`db:migrate` now reports whether `.env.local` loaded, whether the effective URL
+matches it, and whether an existing shell variable takes precedence. It does not
+print values. The migration reports its failing stage, a sanitized error code,
+static troubleshooting advice and, when supplied by PostgreSQL, a numeric SQL
+position. Failed SQL is explicitly rolled back on the same connection. The SSL
+compatibility warning is resolved by explicitly selecting `verify-full` in the
+in-memory connection configuration; neither environment file is rewritten.
+
+Before executing migration SQL, the script requires encrypted TLS with an
+authorized peer and an available Timescale extension. Its `by_range` hypertable
+API is documented for TimescaleDB 2.13 and newer. SQL compatibility on a specific
+service cannot be verified until TLS and authentication succeed.
+
 Keep `TIGER_DATABASE_URL` server-side in the correct Vercel environment scope.
 Provide the service's trusted PEM certificate chain as `TIGER_DATABASE_CA` when
 the certificate is not trusted by Node's default roots. This accepts actual
