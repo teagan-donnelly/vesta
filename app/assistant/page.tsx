@@ -14,6 +14,7 @@ import { useAssistantLanguage } from "@/lib/assistant-language";
 import type { assistant } from "@/lib/collaboration/assistant";
 import { formatCurrency } from "@/lib/analysis";
 import { dateLabel } from "@/components/activity-table";
+import { AssistantMessage } from "@/components/assistant-message";
 type Reply = Awaited<ReturnType<typeof assistant>>;
 export default function AssistantPage() {
   return (
@@ -107,7 +108,7 @@ function Conversation({ profile }: { profile: string }) {
                 <strong>
                   {m.role === "user" ? (spanish ? "Tú" : "You") : "Vesta"}
                 </strong>
-                <p>{m.content}</p>
+                {m.role === "assistant" ? <AssistantMessage content={m.content} presentation={m.presentation} spanish={spanish} onPreview={option=>setSimulation(option.simulation)}/> : <p>{m.content}</p>}
               </article>
             ))
           ) : (

@@ -1,0 +1,29 @@
+.chat-panel .assistant-prose { overflow-wrap:anywhere; }
+.chat-panel .assistant-prose p { margin:10px 0; line-height:1.7; }
+.chat-panel .assistant-prose p:first-child { margin-top:6px; }
+.chat-panel .assistant-prose h4 { margin:18px 0 8px; font-size:16px; font-weight:650; }
+.chat-panel .assistant-prose ul,.chat-panel .assistant-prose ol { margin:10px 0; padding-left:23px; font-size:15px; line-height:1.7; }
+.chat-panel .assistant-prose li + li { margin-top:7px; }
+.chat-panel .assistant-prose ul { list-style:disc outside; }
+.chat-panel .assistant-prose ol { list-style:decimal outside; }
+.chat-panel .assistant-prose strong,.assistant-recommendation dd strong,.assistant-recommendation h4 strong { display:inline; font-size:inherit; color:inherit; margin:0; font-weight:650; }
+.assistant-recommendations { display:grid; gap:14px; margin-top:18px; }
+.assistant-recommendations:has(> .assistant-recommendation:nth-child(2)) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.assistant-recommendation { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; min-width:0; }
+.assistant-recommendation h4 { font-size:16px; font-weight:600; line-height:1.5; margin:0 0 10px; display:flex; align-items:baseline; gap:10px; }
+.assistant-recommendation h4 > span { color:#800f1a; font-size:12px; background:#f2e2df; border-radius:50%; width:24px; height:24px; flex-shrink:0; display:inline-grid; place-items:center; }
+.assistant-recommendation dl { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:12px 0; border-block:1px solid var(--line); margin:12px 0; }
+.assistant-recommendation dt { font-size:12px; line-height:1.5; color:#78685e; }
+.assistant-recommendation dd { margin:5px 0 0; font-size:17px; font-variant-numeric:tabular-nums; }
+.assistant-recommendation dd small { font-size:12px; white-space:nowrap; }
+.chat-panel .assistant-recommendation .recommendation-outcome { font-size:14px; margin:10px 0; }
+.chat-panel .assistant-recommendation .recommendation-limit { font-size:12px; color:#78685e; line-height:1.6; margin:10px 0 14px; }
+.assistant-recommendation .text-link { font-size:14px; }
+.chat-panel .conversation-message.assistant:has(.assistant-recommendations) { max-width:100%; background:transparent; padding-inline:0; }
+.chat-panel:has(.assistant-recommendations) .conversation { max-height:720px; }
+html[data-theme="dark"] .assistant-recommendation dt,html[data-theme="dark"] .chat-panel .assistant-recommendation .recommendation-limit { color:#cbbdb5; }
+@media(max-width:1000px) { .assistant-recommendations:has(> .assistant-recommendation:nth-child(2)) { grid-template-columns:1fr; } }
+@media(max-width:600px) {
+ .assistant-recommendation { padding:14px; }.assistant-recommendation dl { grid-template-columns:1fr; gap:12px; }
+ .chat-panel:has(.assistant-recommendations) .conversation { max-height:620px; }.chat-panel .conversation-message.assistant { max-width:100%; }
+}

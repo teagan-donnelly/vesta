@@ -4,6 +4,7 @@ import "./globals.css";
 import "./approved-theme.css";
 import "./demo-refinement.css";
 import "./multi-group.css";
+import "./assistant-responses.css";
 import { FinancialProvider } from "@/components/financial-provider";
 import { DisplayPreferenceEffect } from "@/components/personal-settings";
 

@@ -1,6 +1,7 @@
 import { financialSnapshot } from "./financial-snapshot";
 import { snapshotRecords } from "./snapshot-records";
 import type { FinancialData, Simulation } from "../types";
+import type { AssistantPresentation } from "../assistant-presentation";
 import { applyPersonalRecords, type PersonalRecord } from "../management";
 import {
   forecastEvents,
@@ -49,7 +50,7 @@ export type PrivatePlan = {
   preferences: string[];
   assistantId?: string;
   assistantProof?: string;
-  messages: { role: "user" | "assistant"; content: string }[];
+  messages: { role: "user" | "assistant"; content: string; presentation?:AssistantPresentation }[];
 };
 export type DemoState = {
   snapshotRevision?: number;
